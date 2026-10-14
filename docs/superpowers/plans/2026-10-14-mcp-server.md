@@ -602,7 +602,7 @@ def test_read_infra(wiki_repo):
 
 def test_read_pattern_drops_sources(wiki_repo):
     text = wr.read_pattern(wiki_repo, "main", "sample-pattern")
-    assert "sources:" not in text
+    assert "\nsources:" not in text  # "resources:"에도 "sources:"가 들어 있으므로 줄 시작으로 구분
     assert "raw/" not in text
     assert "summary: 샘플 요약" in text
     assert "# 샘플 패턴" in text
@@ -1569,7 +1569,7 @@ def test_get_index_with_read_token(svc):
 
 
 def test_get_pattern_and_infra(svc):
-    assert "sources:" not in handle_get_pattern(svc, READ, "sample-pattern", ["원인"])
+    assert "\nsources:" not in handle_get_pattern(svc, READ, "sample-pattern", ["원인"])
     assert last_record(svc)["args"] == {"id": "sample-pattern", "sections": ["원인"]}
     assert "# 클러스터 구성" in handle_get_infra(svc, READ)
 
