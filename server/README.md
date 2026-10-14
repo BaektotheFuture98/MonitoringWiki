@@ -51,6 +51,15 @@ WIKI_ROOT=/srv/MonitoringWiki WIKI_TOKENS_FILE=/etc/wiki-mcp/tokens.json WIKI_AC
   ```
 - 서버 프로세스는 1개로 운영합니다.
 
+## 질문 명령 (위키로만 답하기)
+서버는 `ask` 프롬프트를 제공하며, Claude Code에서는 슬래시 명령으로 보입니다(`/` 입력 후 `monitoring-wiki` 검색, 보통 `/mcp__monitoring-wiki__ask`).
+```
+/mcp__monitoring-wiki__ask 질문내용
+/mcp__monitoring-wiki__ask 질문내용 true      # 두 번째 값(allow_inference)이 true면 일치가 없을 때만 '위키 외 추론(미검증)'을 덧붙임
+```
+- 명령을 쓰면 항상 `get_index`로 시작해 후보 패턴을 확인하고, 위키에 없으면 "알려진 패턴 없음"으로 답하게 지시합니다. 모델이 지시를 어길 가능성이 0은 아니므로 답변에 표시된 호출 도구와 일치 근거를 확인하세요.
+- 프롬프트 목록은 연결할 때 받아 가므로, 서버를 갱신한 뒤에는 Claude Code에서 다시 연결해야 합니다.
+
 ## 담당자 작업
 - 컴파일 대기 목록: `WIKI_ROOT=<저장소> python -m wiki_mcp.pending`
 - 컴파일 규칙은 저장소의 `CLAUDE.md` Ingest 절을 따르고, 끝나면 `main`에 커밋해야 조회에 반영됩니다.
