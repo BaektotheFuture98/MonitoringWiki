@@ -23,3 +23,4 @@ exit 0
    - 프록시 뒤 설정: `FastMCP(..., transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=True, allowed_hosts=["wiki.example.com", "wiki.example.com:*"], allowed_origins=[...]))` (`transport_security.py:19-41`; 정확 일치 또는 `host:*` 포트 와일드카드, 59-69행). 프록시가 Host를 원본 그대로 전달하는지 확인 필요. `host="127.0.0.1"`로 바인드하며 `transport_security`를 생략하면 외부 도메인 Host는 421로 거부됨.
    - 적용 지점: `server.py:850`(SSE), `server.py:984`(streamable HTTP)에서 `self.settings.transport_security` 전달.
 3. (참고) 요청 본문 상한 기본 4 MiB(`transport_security.py:15`, `server.py:179` `max_request_body_size`). 제출 상한 1 MiB와는 별개.
+4. Host 헤더 검사 실측(Task 9, 실제 서버 `wiki-mcp`, 기본 host 127.0.0.1): `Host: wiki-mcp.internal`로 유효한 토큰과 함께 `POST /mcp initialize` 요청 시 **421**(`Invalid Host header: wiki-mcp.internal`). Host 검사가 켜져 있으므로 README의 프록시 설정(업스트림 Host를 `127.0.0.1:<WIKI_PORT>`로 전달)이 **필수**다. 토큰 없는 `POST /mcp`는 401.
