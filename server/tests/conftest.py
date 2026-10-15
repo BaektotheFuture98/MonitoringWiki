@@ -1,7 +1,12 @@
-import subprocess
+"""공용 테스트 픽스처. 위키 루트는 git 없는 임시 폴더다(PoC는 파일을 직접 읽고 쓴다)."""
+import json
 from pathlib import Path
 
 import pytest
+
+from wiki_mcp.auth import hash_token
+from wiki_mcp.config import Settings
+from wiki_mcp.wiki_store import FileWikiStore
 
 CLAUDE_MD = """# 규칙
 
@@ -16,7 +21,22 @@ CLAUDE_MD = """# 규칙
 린트 절입니다.
 """
 
-INDEX_MD = "# 색인\n\n| 패턴 | 요약 |\n|---|---|\n| [p1](patterns/p1.md) | 요약 |\n"
+INDEX_MD = """# 색인
+
+## 통계
+- 패턴: 1
+
+## 패턴
+| 패턴 | 요약 | 리소스 | 대표 시그니처 | confidence | last_seen |
+|---|---|---|---|---|---|
+| [sample-pattern](patterns/sample-pattern.md) | 샘플 요약 | query | query: `샘플 시그니처` | low | 2026-10-01 |
+
+## 인프라
+- [클러스터 구성](infra/cluster.md) — 샘플 구성 (기준일 2026-10-14)
+
+## 기록
+- [작업 로그](log.md)
+"""
 
 INFRA_MD = "---\nid: infra-cluster\nas_of: 2026-10-14\n---\n# 클러스터 구성\n"
 
@@ -49,31 +69,46 @@ solution_origin: report
 LOG_MD = "# 작업 로그\n\n## [2026-10-01 10:20] ingest | raw/2026-10-01/101010.txt\n- 처리\n"
 
 
-def git(root: Path, *args: str) -> None:
-    subprocess.run(["git", "-C", str(root), *args], check=True, capture_output=True)
-
-
 def write(root: Path, rel: str, text: str) -> None:
     path = root / rel
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8", newline="\n")
 
 
+def write_tokens(path: Path, *entries: tuple[str, str, list[str]]) -> Path:
+    """entries: (토큰 이름, 비밀값, 스코프 목록)."""
+    data = [{"name": name, "sha256": hash_token(secret), "scopes": scopes} for name, secret, scopes in entries]
+    path.write_text(json.dumps(data), encoding="utf-8")
+    return path
+
+
+def make_settings(root: Path, tmp_path: Path, **overrides) -> Settings:
+    values = {
+        "wiki_root": root,
+        "tz": "Asia/Seoul",
+        "tokens_file": tmp_path / "tokens.json",
+        "access_log": tmp_path / "access.jsonl",
+        "max_report_bytes": 10_000,
+        "host": "127.0.0.1",
+        "port": 8000,
+        "state_dir": tmp_path / "state",
+    }
+    values.update(overrides)
+    return Settings(**values)
+
+
 @pytest.fixture
-def wiki_repo(tmp_path: Path) -> Path:
-    root = tmp_path / "repo"
-    root.mkdir()
-    git(root, "init", "-b", "main")
-    git(root, "config", "user.email", "test@example.com")
-    git(root, "config", "user.name", "test")
-    git(root, "config", "core.autocrlf", "false")
+def wiki_root(tmp_path: Path) -> Path:
+    root = tmp_path / "wiki-root"
     write(root, "CLAUDE.md", CLAUDE_MD)
     write(root, "wiki/index.md", INDEX_MD)
     write(root, "wiki/infra/cluster.md", INFRA_MD)
     write(root, "wiki/patterns/sample-pattern.md", PATTERN_MD)
     write(root, "wiki/log.md", LOG_MD)
-    write(root, ".gitignore", "raw/\n")
-    git(root, "add", "-A")
-    git(root, "commit", "-m", "init")
     (root / "raw").mkdir()
     return root
+
+
+@pytest.fixture
+def wiki_store(wiki_root: Path) -> FileWikiStore:
+    return FileWikiStore(wiki_root)

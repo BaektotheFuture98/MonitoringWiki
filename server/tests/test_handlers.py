@@ -1,10 +1,10 @@
 import json
 
 import pytest
+from conftest import make_settings, write_tokens
 
 from wiki_mcp.access_log import AccessLog
-from wiki_mcp.auth import AuthError, ScopeError, TokenStore, hash_token
-from wiki_mcp.config import Settings
+from wiki_mcp.auth import AuthError, ScopeError, TokenStore
 from wiki_mcp.handlers import (
     Services,
     handle_get_index,
@@ -14,26 +14,23 @@ from wiki_mcp.handlers import (
 )
 from wiki_mcp.ratelimit import RateLimited, RateLimiter
 from wiki_mcp.raw_store import PENDING_MESSAGE, RawStore
+from wiki_mcp.wiki_store import FileWikiStore
 
 READ = "Bearer read-secret"
 SUBMIT = "Bearer submit-secret"
 
 
 @pytest.fixture
-def svc(wiki_repo, tmp_path):
-    tokens = tmp_path / "tokens.json"
-    tokens.write_text(json.dumps([
-        {"name": "query-agent", "sha256": hash_token("read-secret"), "scopes": ["read"]},
-        {"name": "approver", "sha256": hash_token("submit-secret"), "scopes": ["submit"]},
-    ]), encoding="utf-8")
-    settings = Settings(
-        wiki_root=wiki_repo, wiki_ref="main", tz="Asia/Seoul", tokens_file=tokens,
-        access_log=tmp_path / "access.jsonl", max_report_bytes=10_000, host="127.0.0.1", port=8000,
-    )
+def svc(wiki_root, tmp_path):
+    settings = make_settings(wiki_root, tmp_path)
+    write_tokens(settings.tokens_file,
+                 ("query-agent", "read-secret", ["read"]),
+                 ("approver", "submit-secret", ["submit"]))
     return Services(
         settings=settings,
-        tokens=TokenStore.load(tokens),
-        store=RawStore(wiki_repo, "Asia/Seoul", 10_000),
+        tokens=TokenStore.load(settings.tokens_file),
+        wiki=FileWikiStore(wiki_root),
+        store=RawStore(wiki_root, "Asia/Seoul", 10_000),
         limiter=RateLimiter(2, 60.0),
         log=AccessLog(settings.access_log),
     )
@@ -45,7 +42,7 @@ def last_record(svc):
 
 
 def test_get_index_with_read_token(svc):
-    assert "| [p1](patterns/p1.md) | 요약 |" in handle_get_index(svc, READ)
+    assert "[sample-pattern](patterns/sample-pattern.md)" in handle_get_index(svc, READ)
     record = last_record(svc)
     assert (record["token"], record["tool"], record["status"]) == ("query-agent", "get_index", "ok")
 

@@ -9,6 +9,9 @@ description = "MonitoringWiki MCP server"
 requires-python = ">=3.11"
 dependencies = [
   "mcp>=1.12,<2",
+  "fastapi>=0.115",
+  "anthropic>=0.40",
+  "python-dotenv>=1.0",
   "filelock>=3.12",
   "tzdata>=2024.1",
   "uvicorn>=0.30",

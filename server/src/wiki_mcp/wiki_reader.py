@@ -1,65 +1,53 @@
-"""git ref에 커밋된 위키 파일을 읽는다. 작업 트리는 읽지 않는다."""
+"""WikiStore에서 위키 파일을 읽는다. 패턴 페이지는 sources를 빼고 돌려준다."""
 from __future__ import annotations
 
 import re
-import subprocess
-from pathlib import Path
 from typing import Sequence
+
+from .wiki_store import WikiStore
 
 PATTERN_ID_RE = re.compile(r"[a-z0-9][a-z0-9-]*")
 SECTION_NAMES = ("원인", "증상", "해결방법", "관련 패턴")
+INDEX_PATH = "wiki/index.md"
+INFRA_PATH = "wiki/infra/cluster.md"
+LOG_PATH = "wiki/log.md"
+PATTERNS_DIR = "wiki/patterns"
 
 
 class WikiReadError(Exception):
-    """git에서 위키 파일을 읽지 못함."""
+    """위키 파일을 읽지 못함."""
 
 
 class PatternNotFound(WikiReadError):
-    """요청한 패턴 페이지가 ref에 없음."""
+    """요청한 패턴 페이지가 없음."""
 
 
 class InvalidRequest(ValueError):
     """도구 입력값이 규칙에 맞지 않음."""
 
 
-def _git(root: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
-    return subprocess.run(["git", "-C", str(root), *args], capture_output=True)
+def pattern_path(pattern_id: str) -> str:
+    return f"{PATTERNS_DIR}/{pattern_id}.md"
 
 
-def check_ref(root: Path, ref: str) -> None:
-    result = _git(root, "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}")
-    if result.returncode != 0:
-        raise WikiReadError(f"git ref를 읽을 수 없습니다: {ref} ({root})")
-
-
-def git_show(root: Path, ref: str, path: str) -> str:
-    result = _git(root, "show", f"{ref}:{path}")
-    if result.returncode != 0:
-        raise FileNotFoundError(f"{ref}:{path}")
-    return result.stdout.decode("utf-8")
-
-
-def list_files(root: Path, ref: str, directory: str) -> list[str]:
-    result = _git(root, "ls-tree", "--name-only", f"{ref}:{directory}")
-    if result.returncode != 0:
-        return []
-    names = result.stdout.decode("utf-8").splitlines()
-    return [f"{directory}/{name}" for name in names if name]
-
-
-def _read(root: Path, ref: str, path: str) -> str:
+def _read(store: WikiStore, path: str) -> str:
     try:
-        return git_show(root, ref, path)
+        return store.read(path)
     except FileNotFoundError as exc:
-        raise WikiReadError(f"{path}를 {ref}에서 찾을 수 없습니다.") from exc
+        raise WikiReadError(f"{path}를 찾을 수 없습니다.") from exc
 
 
-def read_index(root: Path, ref: str) -> str:
-    return _read(root, ref, "wiki/index.md")
+def check_wiki(store: WikiStore) -> None:
+    if not store.exists(INDEX_PATH):
+        raise WikiReadError(f"{INDEX_PATH}가 없습니다. WIKI_ROOT를 확인하세요.")
 
 
-def read_infra(root: Path, ref: str) -> str:
-    return _read(root, ref, "wiki/infra/cluster.md")
+def read_index(store: WikiStore) -> str:
+    return _read(store, INDEX_PATH)
+
+
+def read_infra(store: WikiStore) -> str:
+    return _read(store, INFRA_PATH)
 
 
 def split_frontmatter(text: str) -> tuple[list[str], list[str]]:
@@ -101,7 +89,7 @@ def _split_sections(body: list[str]) -> tuple[list[str], dict[str, list[str]]]:
     return head, sections
 
 
-def read_pattern(root: Path, ref: str, pattern_id: str, sections: Sequence[str] | None = None) -> str:
+def read_pattern(store: WikiStore, pattern_id: str, sections: Sequence[str] | None = None) -> str:
     if not PATTERN_ID_RE.fullmatch(pattern_id):
         raise InvalidRequest(f"패턴 id 형식이 올바르지 않습니다: {pattern_id!r}")
     wanted = set(sections) if sections else set(SECTION_NAMES)
@@ -109,7 +97,7 @@ def read_pattern(root: Path, ref: str, pattern_id: str, sections: Sequence[str] 
     if unknown:
         raise InvalidRequest(f"알 수 없는 섹션: {unknown}. 가능한 값: {list(SECTION_NAMES)}")
     try:
-        text = git_show(root, ref, f"wiki/patterns/{pattern_id}.md")
+        text = store.read(pattern_path(pattern_id))
     except FileNotFoundError as exc:
         raise PatternNotFound(f"패턴 {pattern_id}가 없습니다. get_index로 id를 확인하세요.") from exc
 

@@ -10,6 +10,7 @@ from .auth import AuthError, TokenEntry, TokenStore, require_scope
 from .config import Settings
 from .ratelimit import RateLimiter
 from .raw_store import RawStore
+from .wiki_store import WikiStore
 
 T = TypeVar("T")
 
@@ -18,6 +19,7 @@ T = TypeVar("T")
 class Services:
     settings: Settings
     tokens: TokenStore
+    wiki: WikiStore
     store: RawStore
     limiter: RateLimiter
     log: AccessLog
@@ -47,9 +49,8 @@ def _run(
 
 
 def handle_get_index(svc: Services, authorization: str | None) -> str:
-    s = svc.settings
     return _run(svc, authorization, "get_index", "read", {},
-                lambda entry: wiki_reader.read_index(s.wiki_root, s.wiki_ref))
+                lambda entry: wiki_reader.read_index(svc.wiki))
 
 
 def handle_get_pattern(
@@ -58,16 +59,14 @@ def handle_get_pattern(
     pattern_id: str,
     sections: list[str] | None = None,
 ) -> str:
-    s = svc.settings
     args = {"id": pattern_id, "sections": list(sections) if sections else None}
     return _run(svc, authorization, "get_pattern", "read", args,
-                lambda entry: wiki_reader.read_pattern(s.wiki_root, s.wiki_ref, pattern_id, sections))
+                lambda entry: wiki_reader.read_pattern(svc.wiki, pattern_id, sections))
 
 
 def handle_get_infra(svc: Services, authorization: str | None) -> str:
-    s = svc.settings
     return _run(svc, authorization, "get_infra", "read", {},
-                lambda entry: wiki_reader.read_infra(s.wiki_root, s.wiki_ref))
+                lambda entry: wiki_reader.read_infra(svc.wiki))
 
 
 def handle_submit_report(svc: Services, authorization: str | None, text: str) -> dict[str, str]:

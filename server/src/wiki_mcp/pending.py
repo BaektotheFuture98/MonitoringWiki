@@ -1,6 +1,6 @@
-"""담당자용: 아직 컴파일되지 않은 raw 파일 목록을 출력한다.
+"""담당자용: 아직 위키에 반영되지 않은 raw 파일 목록을 출력한다(자동 컴파일이 실패한 보고서 확인용).
 
-사용법: WIKI_ROOT=<저장소> [WIKI_REF=main] python -m wiki_mcp.pending
+사용법: WIKI_ROOT=<저장소> python -m wiki_mcp.pending
 """
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from pathlib import Path
 
 from . import wiki_reader
 from .raw_store import IGNORED_NAMES
+from .wiki_store import FileWikiStore, WikiStore
 
 RAW_PATH_RE = re.compile(r"raw/\d{4}-\d{2}-\d{2}/[^\s`'\"\],)]+")
 INGEST_HEADING_RE = re.compile(r"^## \[[^\]]*\] ingest\b")
@@ -41,26 +42,26 @@ def _ingest_entries(log_text: str) -> str:
     return "\n".join(collected)
 
 
-def referenced_raw_paths(root: Path, ref: str) -> set[str]:
+def referenced_raw_paths(store: WikiStore) -> set[str]:
     referenced: set[str] = set()
-    for path in wiki_reader.list_files(root, ref, "wiki/patterns"):
+    for path in store.list(wiki_reader.PATTERNS_DIR):
         if not path.endswith(".md"):
             continue
-        frontmatter, _ = wiki_reader.split_frontmatter(wiki_reader.git_show(root, ref, path))
+        frontmatter, _ = wiki_reader.split_frontmatter(store.read(path))
         referenced.update(RAW_PATH_RE.findall(_sources_text(frontmatter)))
     try:
-        log_text = wiki_reader.git_show(root, ref, "wiki/log.md")
+        log_text = store.read(wiki_reader.LOG_PATH)
     except FileNotFoundError:
         log_text = ""
     referenced.update(RAW_PATH_RE.findall(_ingest_entries(log_text)))
     return referenced
 
 
-def pending_raw_files(root: Path, ref: str) -> list[str]:
+def pending_raw_files(root: Path, store: WikiStore) -> list[str]:
     raw_dir = root / "raw"
     if not raw_dir.exists():
         return []
-    referenced = referenced_raw_paths(root, ref)
+    referenced = referenced_raw_paths(store)
     files = [
         path.relative_to(root).as_posix()
         for path in sorted(raw_dir.rglob("*"))
@@ -75,13 +76,13 @@ def main() -> int:
         print("WIKI_ROOT 환경 변수가 필요합니다.", file=sys.stderr)
         return 2
     root = Path(root_value)
-    ref = os.environ.get("WIKI_REF", "").strip() or "main"
+    store = FileWikiStore(root)
     try:
-        wiki_reader.check_ref(root, ref)
+        wiki_reader.check_wiki(store)
     except wiki_reader.WikiReadError as exc:
         print(str(exc), file=sys.stderr)
         return 1
-    pending = pending_raw_files(root, ref)
+    pending = pending_raw_files(root, store)
     if not pending:
         print("컴파일 대기 중인 raw가 없습니다.")
         return 0

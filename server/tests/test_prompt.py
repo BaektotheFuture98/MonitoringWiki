@@ -1,23 +1,15 @@
 import asyncio
-import json
 
 import pytest
+from conftest import make_settings, write_tokens
 
 from wiki_mcp.app import ASK_PROMPT_NAME, build_ask_prompt, build_services, create_mcp
-from wiki_mcp.auth import hash_token
-from wiki_mcp.config import Settings
 
 
 @pytest.fixture
-def mcp(wiki_repo, tmp_path):
-    tokens = tmp_path / "tokens.json"
-    tokens.write_text(json.dumps([
-        {"name": "query-agent", "sha256": hash_token("read-secret"), "scopes": ["read"]},
-    ]), encoding="utf-8")
-    settings = Settings(
-        wiki_root=wiki_repo, wiki_ref="main", tz="Asia/Seoul", tokens_file=tokens,
-        access_log=tmp_path / "access.jsonl", max_report_bytes=10_000, host="127.0.0.1", port=8000,
-    )
+def mcp(wiki_root, tmp_path):
+    settings = make_settings(wiki_root, tmp_path)
+    write_tokens(settings.tokens_file, ("query-agent", "read-secret", ["read"]))
     return create_mcp(build_services(settings), "가이드")
 
 

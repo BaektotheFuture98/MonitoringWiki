@@ -10,5 +10,8 @@ __pycache__/
 # 로컬 실행 확인용
 .local-test/
 
+# 작업 기록과 스냅샷(WIKI_STATE_DIR 기본 위치)
+.state/
+
 # 비밀값(API 키). 키 이름만 담은 server/.env.example만 커밋
 .env

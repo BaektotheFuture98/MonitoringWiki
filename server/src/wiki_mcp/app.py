@@ -1,6 +1,6 @@
 """MCP 서버 조립: 도구 등록, 인증 미들웨어, 상태 확인, 실행.
 
-도구 처리기(git 호출, 파일 락 대기)는 이벤트 루프를 막지 않도록 스레드에서 실행한다.
+도구 처리기(파일 읽기, 파일 락 대기)는 이벤트 루프를 막지 않도록 스레드에서 실행한다.
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from starlette.routing import Route
 from . import wiki_reader
 from .access_log import AccessLog
 from .auth import AuthError, TokenStore
-from .config import Settings, load_settings
+from .config import Settings, load_env_file, load_settings
 from .handlers import (
     Services,
     handle_get_index,
@@ -27,6 +27,7 @@ from .handlers import (
 from .instructions import load_instructions
 from .ratelimit import RateLimiter
 from .raw_store import RawStore
+from .wiki_store import FileWikiStore
 
 SUBMIT_LIMIT_PER_MINUTE = 10
 
@@ -72,6 +73,7 @@ def build_services(settings: Settings) -> Services:
     return Services(
         settings=settings,
         tokens=TokenStore.load(settings.tokens_file),
+        wiki=FileWikiStore(settings.wiki_root),
         store=RawStore(settings.wiki_root, settings.tz, settings.max_report_bytes),
         limiter=RateLimiter(SUBMIT_LIMIT_PER_MINUTE, 60.0),
         log=AccessLog(settings.access_log),
@@ -138,22 +140,23 @@ class BearerAuthMiddleware:
 
 
 def create_app(settings: Settings):
-    wiki_reader.check_ref(settings.wiki_root, settings.wiki_ref)
     svc = build_services(settings)
-    instructions = load_instructions(settings.wiki_root, settings.wiki_ref)
+    wiki_reader.check_wiki(svc.wiki)
+    instructions = load_instructions(svc.wiki)
     app = create_mcp(svc, instructions).streamable_http_app()
 
     async def healthz(request: Request) -> JSONResponse:
         try:
-            wiki_reader.check_ref(settings.wiki_root, settings.wiki_ref)
+            wiki_reader.check_wiki(svc.wiki)
         except wiki_reader.WikiReadError as exc:
             return JSONResponse({"status": "error", "detail": str(exc)}, status_code=503)
-        return JSONResponse({"status": "ok", "ref": settings.wiki_ref})
+        return JSONResponse({"status": "ok"})
 
     app.router.routes.insert(0, Route("/healthz", healthz, methods=["GET"]))
     return BearerAuthMiddleware(app, svc.tokens)
 
 
 def main() -> None:
+    load_env_file()
     settings = load_settings()
     uvicorn.run(create_app(settings), host=settings.host, port=settings.port)

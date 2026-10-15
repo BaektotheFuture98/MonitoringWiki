@@ -1,34 +1,26 @@
 import asyncio
-import json
-from dataclasses import replace
 from types import SimpleNamespace
 
 import pytest
+from conftest import make_settings, write_tokens
 from starlette.testclient import TestClient
 
 from wiki_mcp.app import _authorization, build_services, create_app, create_mcp
-from wiki_mcp.auth import hash_token
-from wiki_mcp.config import Settings
 from wiki_mcp.wiki_reader import WikiReadError
 
 
 @pytest.fixture
-def settings(wiki_repo, tmp_path):
-    tokens = tmp_path / "tokens.json"
-    tokens.write_text(json.dumps([
-        {"name": "query-agent", "sha256": hash_token("read-secret"), "scopes": ["read"]},
-    ]), encoding="utf-8")
-    return Settings(
-        wiki_root=wiki_repo, wiki_ref="main", tz="Asia/Seoul", tokens_file=tokens,
-        access_log=tmp_path / "access.jsonl", max_report_bytes=10_000, host="127.0.0.1", port=8000,
-    )
+def settings(wiki_root, tmp_path):
+    s = make_settings(wiki_root, tmp_path)
+    write_tokens(s.tokens_file, ("query-agent", "read-secret", ["read"]))
+    return s
 
 
 def test_healthz_without_token(settings):
     with TestClient(create_app(settings)) as client:
         response = client.get("/healthz")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "ref": "main"}
+    assert response.json() == {"status": "ok"}
 
 
 @pytest.mark.parametrize("headers", [{}, {"Authorization": "Bearer wrong"}])
@@ -39,9 +31,10 @@ def test_mcp_requires_valid_token(settings, headers):
     assert response.headers["www-authenticate"] == "Bearer"
 
 
-def test_create_app_fails_without_ref(settings):
+def test_create_app_fails_without_index(settings):
+    (settings.wiki_root / "wiki" / "index.md").unlink()
     with pytest.raises(WikiReadError):
-        create_app(replace(settings, wiki_ref="no-such-branch"))
+        create_app(settings)
 
 
 def test_tools_registered(settings):
