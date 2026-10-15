@@ -1,6 +1,7 @@
 """테스트용 컴파일 계획 빌더."""
 from __future__ import annotations
 
+import copy
 from datetime import date
 from typing import Any, Iterable
 
@@ -64,3 +65,18 @@ def to_plan(
     **top: Any,
 ) -> CompilePlan:
     return parse_plan(plan_dict(*items, **top), existing_ids=set(existing_ids), masker=Masker(names), today=TODAY)
+
+
+class FakePlanGenerator:
+    """정해 둔 응답을 차례로 돌려준다. 마지막 응답은 계속 반복하고, 예외 객체는 던진다."""
+
+    def __init__(self, *responses: Any) -> None:
+        self.responses = list(responses)
+        self.calls: list[dict[str, Any]] = []
+
+    def generate_plan(self, masked_text: str, index_text: str, feedback: str | None = None) -> dict[str, Any]:
+        self.calls.append({"masked_text": masked_text, "index_text": index_text, "feedback": feedback})
+        response = self.responses.pop(0) if len(self.responses) > 1 else self.responses[0]
+        if isinstance(response, Exception):
+            raise response
+        return copy.deepcopy(response)

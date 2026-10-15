@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 
 from filelock import FileLock
 
-PENDING_MESSAGE = "raw 저장 완료. 컴파일 대기 중(담당자 수동 처리)이며 위키 조회에 반영되기까지 시간이 걸립니다."
+PENDING_MESSAGE = "raw 저장 완료. 자동 컴파일 대기열에 넣었습니다."
 DUPLICATE_MESSAGE = "동일한 내용의 보고서가 이미 저장되어 있어 저장하지 않았습니다."
 LOCK_NAME = ".submit.lock"
 IGNORED_NAMES = {LOCK_NAME, ".gitkeep"}
