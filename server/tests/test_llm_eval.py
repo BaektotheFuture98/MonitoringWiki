@@ -37,7 +37,7 @@ def generator():
     return AnthropicPlanGenerator(
         api_key=os.environ["ANTHROPIC_API_KEY"],
         model=os.environ["WIKI_LLM_MODEL"],
-        system_prompt=build_system_prompt((REPO / "CLAUDE.md").read_text(encoding="utf-8")),
+        system_prompt=build_system_prompt((REPO / "AGENTS.md").read_text(encoding="utf-8")),
         timeout=300,
     )
 

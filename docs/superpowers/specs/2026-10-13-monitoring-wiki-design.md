@@ -17,7 +17,7 @@
 ## 3. 디렉터리 구조
 ```
 MonitoringWiki/
-├─ CLAUDE.md                 # 운영 규칙(스키마)
+├─ AGENTS.md                 # 운영 규칙(스키마)
 ├─ raw/YYYY-MM-DD/HHMMSS.txt # 불변 원본 (수신 날짜·시각 명명, 같은 초는 HHMMSS-2.txt)
 ├─ wiki/
 │  ├─ index.md               # 통합 색인: 패턴 1개 = 1행(요약, 리소스, 대표 시그니처, confidence, last_seen) + 인프라 링크
@@ -75,5 +75,5 @@ frontmatter: `id`(= 파일명, kebab-case), `summary`(증상·원인 한 줄 요
 - 승인 권한 분리: 외부 에이전트의 질문 경로(읽기 도구)와 ingest 경로(`submit_report`)는 별도 권한으로 둔다.
 
 ## 8. 범위
-이번 범위: 디렉터리 구조, `CLAUDE.md` 운영 규칙, 패턴 템플릿, 색인·로그, 인프라 구성 페이지, 실제 패턴 2건(Nori 사전 불일치, 다수 인덱스 agg 쿼리 지연).
+이번 범위: 디렉터리 구조, `AGENTS.md` 운영 규칙, 패턴 템플릿, 색인·로그, 인프라 구성 페이지, 실제 패턴 2건(Nori 사전 불일치, 다수 인덱스 agg 쿼리 지연).
 제외: MCP 서버 구현, 임베딩 검색, 알람 연동, 원격 저장소·git 설정.

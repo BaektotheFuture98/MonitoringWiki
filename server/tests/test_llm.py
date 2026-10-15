@@ -13,7 +13,7 @@ from wiki_mcp.llm import (
     build_user_message,
 )
 
-REAL_CLAUDE_MD = Path(__file__).resolve().parents[2] / "CLAUDE.md"
+REAL_AGENTS_MD = Path(__file__).resolve().parents[2] / "AGENTS.md"
 
 
 class FakeMessages:
@@ -46,7 +46,7 @@ def generator(client):
 
 
 def test_system_prompt_includes_rule_sections():
-    prompt = build_system_prompt(REAL_CLAUDE_MD.read_text(encoding="utf-8"))
+    prompt = build_system_prompt(REAL_AGENTS_MD.read_text(encoding="utf-8"))
     for name in RULE_SECTIONS:
         assert f"## {name}" in prompt
     assert PLAN_TOOL_NAME in prompt

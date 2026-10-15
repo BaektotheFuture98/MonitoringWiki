@@ -104,7 +104,7 @@ def update_index_infra_line(index_text: str, summary: str, as_of: date) -> str:
 # confidence --------------------------------------------------------
 
 def confidence_for(resource_count: int, occurrences: int) -> str:
-    """CLAUDE.md 기준: 리소스 2개 이상이고 3회 이상이면 high, 둘 중 하나면 medium, 나머지 low."""
+    """AGENTS.md 기준: 리소스 2개 이상이고 3회 이상이면 high, 둘 중 하나면 medium, 나머지 low."""
     many_resources = resource_count >= 2
     many_occurrences = occurrences >= 3
     if many_resources and many_occurrences:

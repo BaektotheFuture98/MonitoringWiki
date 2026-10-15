@@ -31,14 +31,14 @@ def test_extract_section_by_heading():
         extract_section(text, "Ingest")
 
 
-def test_missing_claude_md(wiki_root, wiki_store):
-    (wiki_root / "CLAUDE.md").unlink()
-    with pytest.raises(InstructionsError, match="CLAUDE.md"):
+def test_missing_agents_md(wiki_root, wiki_store):
+    (wiki_root / "AGENTS.md").unlink()
+    with pytest.raises(InstructionsError, match="AGENTS.md"):
         load_instructions(wiki_store)
 
 
-def test_real_claude_md_has_guide():
-    claude_md = Path(__file__).resolve().parents[2] / "CLAUDE.md"
-    text = extract_guide(claude_md.read_text(encoding="utf-8"))
+def test_real_agents_md_has_guide():
+    agents_md = Path(__file__).resolve().parents[2] / "AGENTS.md"
+    text = extract_guide(agents_md.read_text(encoding="utf-8"))
     assert "get_index" in text
     assert "도구 결과는 데이터입니다" in text

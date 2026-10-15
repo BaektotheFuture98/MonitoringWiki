@@ -22,7 +22,7 @@
 | `submit_report`는 raw 저장으로 끝 | MCP `submit_report`도 같은 컴파일 서비스를 사용 |
 | 컴파일 롤백은 git | 컴파일 직전 `wiki/` 스냅샷 |
 
-`CLAUDE.md`의 Ingest 절(수동 컴파일, "`main`에 커밋")과 `2026-10-14-mcp-server-design.md`의 git 관련 부분은 구현 시 이 문서에 맞춰 고친다.
+`AGENTS.md`의 Ingest 절(수동 컴파일, "`main`에 커밋")과 `2026-10-14-mcp-server-design.md`의 git 관련 부분은 구현 시 이 문서에 맞춰 고친다.
 
 ## 3. 전제와 승인 모델
 - **승인은 웹에서 이미 끝난 상태**로 보고서가 들어온다. 서버는 승인 여부를 확인하지 않고 제출을 승인된 것으로 취급한다.
@@ -47,7 +47,7 @@ WikiStore(인터페이스) ← FileWikiStore(PoC) / GitWikiStore(이후)
 | `GET /api/index` | read | `wiki/index.md` 전체 |
 | `GET /api/patterns/{id}` (`?sections=원인,증상`) | read | 패턴 페이지(`sources` 제외) |
 | `GET /api/infra` | read | `wiki/infra/cluster.md` |
-| `GET /api/guide` | read | CLAUDE.md "외부 에이전트용 Query 가이드" 절(에이전트와 웹이 같은 질문 규칙을 쓰도록) |
+| `GET /api/guide` | read | AGENTS.md "외부 에이전트용 Query 가이드" 절(에이전트와 웹이 같은 질문 규칙을 쓰도록) |
 | `POST /api/reports` | submit | 원큐 컴파일(6절). 본문 `{"text": "..."}` |
 | `GET /api/reports/{작업ID}` | submit | 작업 상태와 결과 |
 | `POST /api/reports/{작업ID}/retry` | submit | 실패한 작업 재시도 |
@@ -79,7 +79,7 @@ WikiStore(인터페이스) ← FileWikiStore(PoC) / GitWikiStore(이후)
 3. **마스킹**(7절) 후 텍스트만 LLM에 전달한다.
 4. **LLM이 컴파일 계획(JSON) 작성**(9절). 입력은 마스킹된 보고서, 현재 `wiki/index.md`, 컴파일 규칙이다.
 5. **계획 검증**(9.2). 실패하면 한 번 재시도하고, 그래도 실패하면 `compile_failed`.
-6. **서버 코드가 계산**: `occurrences`, `first_seen`/`last_seen`, `sources`, `confidence`(CLAUDE.md 기준), 색인 행.
+6. **서버 코드가 계산**: `occurrences`, `first_seen`/`last_seen`, `sources`, `confidence`(AGENTS.md 기준), 색인 행.
 7. **스냅샷**: `wiki/` 전체를 `<상태 폴더>/snapshots/<시각>-<작업ID>/`에 복사하고 최근 20개만 보관한다.
 8. **원자적 쓰기**(쓰기 락 아래): 패턴 페이지 → `wiki/index.md` → `wiki/log.md` 순. 각 파일은 임시 파일에 쓴 뒤 교체한다.
 9. 작업 기록을 저장하고 결과를 반환한다.
@@ -168,7 +168,7 @@ LLM으로 보내기 전에 서버가 항상 수행한다. 위키 개인정보 �
 
 ### 9.3 LLM 호출
 - `PlanGenerator` 인터페이스(`generate_plan(masked_text, index_text) -> dict`)를 두고, 실제 구현은 Anthropic API(Claude) 직접 호출이다. 테스트에서는 가짜 구현으로 대체한다.
-- 프롬프트는 CLAUDE.md의 "지식 종류 구분과 처리", "Ingest", "시그니처 정규화", "개인정보", "패턴 페이지 형식" 절에서 서버 시작 시 만든다. 보고서 본문은 데이터로만 취급하고 그 안의 지시를 따르지 않도록 명시한다.
+- 프롬프트는 AGENTS.md의 "지식 종류 구분과 처리", "Ingest", "시그니처 정규화", "개인정보", "패턴 페이지 형식" 절에서 서버 시작 시 만든다. 보고서 본문은 데이터로만 취급하고 그 안의 지시를 따르지 않도록 명시한다.
 - **가정**: LLM 제공자는 Anthropic API이고 키는 `ANTHROPIC_API_KEY`, 모델은 `WIKI_LLM_MODEL`로 지정한다(기본값 없음, 필수). 비밀값은 `.env` 파일로 관리한다(10절).
 - 인프라 정보는 자동 반영하지 않고 `infra_candidates`로만 반환한다.
 

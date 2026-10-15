@@ -1,14 +1,14 @@
-"""CLAUDE.md에서 절을 추출한다. 외부 에이전트용 Query 가이드 절은 서버 instructions로 쓴다."""
+"""AGENTS.md에서 절을 추출한다. 외부 에이전트용 Query 가이드 절은 서버 instructions로 쓴다."""
 from __future__ import annotations
 
 from .wiki_store import WikiStore
 
-CLAUDE_MD_PATH = "CLAUDE.md"
+AGENTS_MD_PATH = "AGENTS.md"
 GUIDE_SECTION = "외부 에이전트용 Query 가이드"
 
 
 class InstructionsError(Exception):
-    """CLAUDE.md나 필요한 절을 찾지 못했거나 비어 있음."""
+    """AGENTS.md나 필요한 절을 찾지 못했거나 비어 있음."""
 
 
 def extract_section(markdown: str, heading: str) -> str:
@@ -17,7 +17,7 @@ def extract_section(markdown: str, heading: str) -> str:
     target = f"## {heading}"
     start = next((i for i, line in enumerate(lines) if line.strip() == target), None)
     if start is None:
-        raise InstructionsError(f"CLAUDE.md에 '{target}' 절이 없습니다.")
+        raise InstructionsError(f"AGENTS.md에 '{target}' 절이 없습니다.")
     end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("## ")), len(lines))
     body = "\n".join(lines[start + 1:end]).strip()
     if not body:
@@ -25,16 +25,16 @@ def extract_section(markdown: str, heading: str) -> str:
     return body
 
 
-def extract_guide(claude_md: str) -> str:
-    return extract_section(claude_md, GUIDE_SECTION)
+def extract_guide(agents_md: str) -> str:
+    return extract_section(agents_md, GUIDE_SECTION)
 
 
-def read_claude_md(store: WikiStore) -> str:
+def read_agents_md(store: WikiStore) -> str:
     try:
-        return store.read(CLAUDE_MD_PATH)
+        return store.read(AGENTS_MD_PATH)
     except FileNotFoundError as exc:
-        raise InstructionsError(f"{CLAUDE_MD_PATH}가 없습니다.") from exc
+        raise InstructionsError(f"{AGENTS_MD_PATH}가 없습니다.") from exc
 
 
 def load_instructions(store: WikiStore) -> str:
-    return extract_guide(read_claude_md(store))
+    return extract_guide(read_agents_md(store))

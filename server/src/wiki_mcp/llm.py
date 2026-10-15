@@ -84,8 +84,8 @@ class PlanGenerator(Protocol):
     def generate_plan(self, masked_text: str, index_text: str, feedback: str | None = None) -> dict[str, Any]: ...
 
 
-def build_system_prompt(claude_md: str) -> str:
-    sections = [f"## {name}\n{extract_section(claude_md, name)}" for name in RULE_SECTIONS]
+def build_system_prompt(agents_md: str) -> str:
+    sections = [f"## {name}\n{extract_section(agents_md, name)}" for name in RULE_SECTIONS]
     return SERVER_RULES + "\n\n# 위키 운영 규칙(발췌)\n\n" + "\n\n".join(sections)
 
 

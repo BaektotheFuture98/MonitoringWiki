@@ -17,7 +17,7 @@ from .auth import TokenStore
 from .compile_service import CompileService, JobStore
 from .config import ConfigError, Settings, load_env_file, load_settings
 from .handlers import Services
-from .instructions import load_instructions, read_claude_md
+from .instructions import load_instructions, read_agents_md
 from .llm import AnthropicPlanGenerator, PlanGenerator, build_system_prompt
 from .masking import Masker, load_names
 from .mcp_adapter import create_mcp
@@ -38,7 +38,7 @@ def _anthropic_generator(settings: Settings, wiki: WikiStore) -> AnthropicPlanGe
     return AnthropicPlanGenerator(
         api_key=settings.anthropic_api_key,
         model=settings.llm_model,
-        system_prompt=build_system_prompt(read_claude_md(wiki)),
+        system_prompt=build_system_prompt(read_agents_md(wiki)),
         timeout=float(settings.compile_timeout),
     )
 

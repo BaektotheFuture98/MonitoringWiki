@@ -14,7 +14,7 @@ from wiki_mcp.mcp_adapter import _authorization, create_mcp
 from wiki_mcp.wiki_reader import WikiReadError
 
 READ = {"Authorization": "Bearer read-secret"}
-REPO_CLAUDE_MD = Path(__file__).resolve().parents[2] / "CLAUDE.md"
+REPO_AGENTS_MD = Path(__file__).resolve().parents[2] / "AGENTS.md"
 INITIALIZE = {
     "jsonrpc": "2.0",
     "id": 1,
@@ -87,7 +87,7 @@ def test_build_services_requires_llm_settings(server_settings):
 
 
 def test_build_services_with_llm_settings(server_settings):
-    shutil.copy(REPO_CLAUDE_MD, server_settings.wiki_root / "CLAUDE.md")
+    shutil.copy(REPO_AGENTS_MD, server_settings.wiki_root / "AGENTS.md")
     svc = build_services(replace(server_settings, anthropic_api_key="sk-test", llm_model="claude-test"))
     assert svc.compiler.generator is not None
 

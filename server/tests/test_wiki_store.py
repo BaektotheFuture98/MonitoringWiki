@@ -13,13 +13,13 @@ def store(tmp_path):
     (root / "wiki" / "patterns" / "b.md").write_text("b\n", encoding="utf-8")
     (root / "wiki" / "patterns" / "a.md").write_text("a\n", encoding="utf-8")
     (root / "wiki" / "patterns" / ".a.md.123.tmp").write_text("임시\n", encoding="utf-8")
-    (root / "CLAUDE.md").write_text("규칙\n", encoding="utf-8")
+    (root / "AGENTS.md").write_text("규칙\n", encoding="utf-8")
     return FileWikiStore(root)
 
 
 def test_read_and_exists(store):
     assert store.read("wiki/index.md") == "색인\n"
-    assert store.read("CLAUDE.md") == "규칙\n"
+    assert store.read("AGENTS.md") == "규칙\n"
     assert store.exists("wiki/index.md")
     assert not store.exists("wiki/missing.md")
     with pytest.raises(FileNotFoundError):
@@ -46,7 +46,7 @@ def test_rejects_paths_outside_root(store, bad):
         store.read(bad)
 
 
-@pytest.mark.parametrize("path", ["CLAUDE.md", "raw/2026-10-15/100000.txt"])
+@pytest.mark.parametrize("path", ["AGENTS.md", "raw/2026-10-15/100000.txt"])
 def test_write_only_under_wiki(store, path):
     with pytest.raises(WikiPathError):
         store.write_atomic(path, "x")

@@ -8,7 +8,7 @@ from wiki_mcp.auth import hash_token
 from wiki_mcp.config import Settings
 from wiki_mcp.wiki_store import FileWikiStore
 
-CLAUDE_MD = """# 규칙
+AGENTS_MD = """# 규칙
 
 ## Query
 내부용 절입니다. `wiki/index.md`를 읽습니다.
@@ -100,7 +100,7 @@ def make_settings(root: Path, tmp_path: Path, **overrides) -> Settings:
 @pytest.fixture
 def wiki_root(tmp_path: Path) -> Path:
     root = tmp_path / "wiki-root"
-    write(root, "CLAUDE.md", CLAUDE_MD)
+    write(root, "AGENTS.md", AGENTS_MD)
     write(root, "wiki/index.md", INDEX_MD)
     write(root, "wiki/infra/cluster.md", INFRA_MD)
     write(root, "wiki/patterns/sample-pattern.md", PATTERN_MD)
