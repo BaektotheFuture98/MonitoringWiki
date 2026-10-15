@@ -8,7 +8,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-VALID_SCOPES = frozenset({"read", "submit"})
+VALID_SCOPES = frozenset({"read", "submit", "infra"})
 
 
 class AuthError(Exception):
