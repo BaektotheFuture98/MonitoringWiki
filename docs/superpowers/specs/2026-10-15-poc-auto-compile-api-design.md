@@ -166,10 +166,17 @@ LLM으로 보내기 전에 서버가 항상 수행한다. 위키 개인정보 �
 ### 9.3 LLM 호출
 - `PlanGenerator` 인터페이스(`generate_plan(masked_text, index_text) -> dict`)를 두고, 실제 구현은 Anthropic API(Claude) 직접 호출이다. 테스트에서는 가짜 구현으로 대체한다.
 - 프롬프트는 CLAUDE.md의 "지식 종류 구분과 처리", "Ingest", "시그니처 정규화", "개인정보", "패턴 페이지 형식" 절에서 서버 시작 시 만든다. 보고서 본문은 데이터로만 취급하고 그 안의 지시를 따르지 않도록 명시한다.
-- **가정**: LLM 제공자는 Anthropic API이고 키는 `ANTHROPIC_API_KEY` 환경 변수, 모델은 `WIKI_LLM_MODEL`로 지정한다(기본값 없음, 필수).
+- **가정**: LLM 제공자는 Anthropic API이고 키는 `ANTHROPIC_API_KEY`, 모델은 `WIKI_LLM_MODEL`로 지정한다(기본값 없음, 필수). 비밀값은 `.env` 파일로 관리한다(10절).
 - 인프라 정보는 자동 반영하지 않고 `infra_candidates`로만 반환한다.
 
 ## 10. 설정 추가
+**`.env` 관리 (2026-10-15 결정)**: API 키 같은 비밀값은 코드나 저장소가 아니라 `.env` 파일로 관리한다.
+- 서버 시작 시(`main()`) `python-dotenv`로 `.env`를 읽는다. 파일 위치는 `WIKI_ENV_FILE`(기본 현재 디렉터리의 `.env`)이며 파일이 없어도 오류가 아니다(환경 변수만으로 동작).
+- **이미 설정된 실제 환경 변수가 `.env`보다 우선**한다(`override=False`). 운영 서버는 systemd/컨테이너 환경 변수로 덮어쓸 수 있다.
+- `.env`는 `.gitignore`에 넣어 커밋하지 않고, 키 이름만 담은 `server/.env.example`을 커밋한다.
+- `load_settings(env)`는 지금처럼 매핑만 받는 순수 함수로 두어 테스트가 파일에 의존하지 않는다. `.env` 읽기는 `main()`에서만 한다.
+- `Settings`의 `anthropic_api_key`는 `repr=False`로 두어 로그나 예외에 키가 찍히지 않게 한다. 접근 로그, 작업 기록, 오류 응답에도 키를 쓰지 않는다.
+
 | 변수 | 기본값 | 설명 |
 |---|---|---|
 | `WIKI_STATE_DIR` | `<WIKI_ROOT>/.state` | 작업 기록, 스냅샷 |

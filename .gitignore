@@ -9,3 +9,6 @@ __pycache__/
 
 # 로컬 실행 확인용
 .local-test/
+
+# 비밀값(API 키). 키 이름만 담은 server/.env.example만 커밋
+.env
