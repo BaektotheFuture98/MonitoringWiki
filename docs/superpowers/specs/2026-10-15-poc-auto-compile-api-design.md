@@ -39,7 +39,7 @@ FastAPI 앱 (한 프로세스, 서버 프로세스는 1개)
 WikiStore(인터페이스) ← FileWikiStore(PoC) / GitWikiStore(이후)
 ```
 - `WikiStore`: `read(path)`, `list(dir)`, `write_atomic(path, text)`, `snapshot(dest)`, `write_lock()`. 위키 읽기를 쓰는 모듈(`wiki_reader`, `instructions`, `pending`)은 이 인터페이스를 통해서만 접근한다.
-- MCP 앱을 FastAPI에 마운트하는 방법(세션 관리자의 lifespan 처리 포함)은 구현 첫 단계의 스파이크로 SDK 1.30.0에서 확인한다. 불가하면 같은 프로세스에서 두 앱을 따로 실행하는 대안을 쓴다.
+- MCP 앱의 라우트를 FastAPI 앱에 옮겨 붙이고(`/mcp` 유지), 부모 앱 lifespan에서 MCP 세션 관리자와 컴파일 워커를 함께 실행한다(`server/SPIKE.md` "FastAPI 결합 확인", SDK 1.30.0).
 
 ## 5. REST API
 | 엔드포인트 | 스코프 | 동작 |
@@ -63,7 +63,7 @@ WikiStore(인터페이스) ← FileWikiStore(PoC) / GitWikiStore(이후)
 | 상태 | 의미 | 본문 |
 |---|---|---|
 | 200 `compiled` | 완료 | `job_id`, `raw_path`, 만든·갱신한 패턴, `infra_candidates`, `unclassified`, `notes`, `snapshot` |
-| 202 `running` | 대기 시간 안에 끝나지 않음 | `job_id` (이후 `GET`으로 확인, 서버는 백그라운드에서 계속 처리) |
+| 202 `queued`/`running` | 대기 시간 안에 끝나지 않음 | `job_id` (이후 `GET`으로 확인, 서버는 백그라운드에서 계속 처리) |
 | 200 `duplicate` | 같은 내용(정규화 해시)이 이미 있음 | 기존 `raw_path`. 컴파일하지 않음 |
 | 502 `compile_failed` | 컴파일 실패 | `job_id`, `raw_path`, `error`. raw는 **이미 저장된 상태** |
 
@@ -135,7 +135,9 @@ LLM으로 보내기 전에 서버가 항상 수행한다. 위키 개인정보 �
     {
       "action": "create | update",
       "id": "kebab-case-id",
+      "title": "새 패턴 페이지 제목",
       "summary": "증상과 원인을 담은 한 줄 요약",
+      "signature": "색인의 대표 시그니처",
       "resources": ["query", "master"],
       "cause": "원인 본문",
       "symptoms": {"query": "...", "master": "...", "data": "미관측(수집 실패)", "slowlog": "미관측(입력 없음)"},
@@ -150,6 +152,7 @@ LLM으로 보내기 전에 서버가 항상 수행한다. 위키 개인정보 �
   "notes": ["호출자에게 알릴 사항"]
 }
 ```
+- `title`(새 페이지 제목)과 `signature`(색인 대표 시그니처)는 `create`에서 필수다. `update`에서는 원인·해결이 기존과 같으면 `cause`·`solution`을 빈 문자열로 둔다.
 - `update`는 현재 색인에 있는 `id`여야 하고, 서버는 `occurrences`+1, `last_seen` 갱신, `sources` 추가, `resources` 합집합, 새 리소스의 증상 추가를 수행한다. 기존 원인·해결은 덮어쓰지 않고 보고서가 다른 내용을 제시하면 "(추가 보고서)" 항목으로 나란히 기록한다.
 - `create`는 현재 색인에 없는 `id`여야 하며 `wiki/_template.md` 형식으로 만든다. `solution_origin`은 `report`.
 
@@ -190,7 +193,7 @@ LLM으로 보내기 전에 서버가 항상 수행한다. 위키 개인정보 �
 | `WIKI_ENABLE_DOCS` | `false` | `/docs` 노출 |
 
 ## 11. 인증과 감사
-- 기존 `TokenStore`를 재사용하고 스코프에 `infra`를 추가한다. FastAPI 의존성(`Depends`)에서 스코프를 확인한다.
+- 기존 `TokenStore`를 재사용하고 스코프에 `infra`를 추가한다. 스코프는 MCP와 같은 공용 처리기(`handlers._run`)에서 확인한다. REST 라우트는 `Authorization` 헤더만 받아 넘긴다.
 - 접근 로그 형식은 그대로이며, 컴파일 작업과 인프라 갱신 이벤트(작업 ID, 결과 상태)를 추가로 기록한다. 보고서 본문은 기록하지 않는다.
 - `infra` 토큰은 인프라 갱신 권한이므로 승인 주체에게만 발급한다.
 
@@ -200,14 +203,13 @@ LLM으로 보내기 전에 서버가 항상 수행한다. 위키 개인정보 �
 - 인프라: 정상 입력의 렌더링, 합계 불일치·IP·노드명 거부, `as_of` 자동 갱신.
 - 권한: `read`/`submit`/`infra` 각각의 허용·거부, `/docs` 기본 비활성.
 - `WikiStore`: `FileWikiStore` 단위 테스트와, 기존 `wiki_reader`·`pending`·`instructions`가 인터페이스 기준으로 같은 결과를 내는지 확인한다(기존 테스트를 임시 폴더 기준으로 이관).
-- **평가 사례**: 기존 보고서 4건(마스킹본)을 입력으로, 기대하는 패턴 `id`·`resources`·`summary` 핵심어를 비교하는 시험을 둔다(실제 LLM 호출은 선택 실행).
+- **평가 사례**: 기존 raw 4개 파일(사건 3건)을 마스킹해 입력으로 넣고, 기대하는 `resources`와 `summary` 핵심어를 비교하는 선택 실행 테스트(`tests/test_llm_eval.py`, `WIKI_LLM_EVAL=1`)를 둔다.
 
 ## 13. 위험과 감수
 - 사람 검토 없이 바로 반영하므로 잘못된 컴파일의 복구 수단은 스냅샷뿐이다(git 이력 없음).
 - 마스킹은 정규식과 목록 기반이라 목록에 없는 회사명·본문 속 이름은 전송된다.
 - 서버가 위키의 유일한 쓰기 주체다. 담당자가 `wiki/`를 직접 고치려면 서버를 멈춘 뒤에 한다.
 - LLM 출력 품질에 따라 컴파일 결과가 달라진다. 계획 검증과 평가 사례로 완화한다.
-- MCP 마운트 방식은 SDK에서 확인 전이다(스파이크).
 
 ## 14. PoC 이후
 - `GitWikiStore`로 git 이력·커밋·롤백 추가, 원격 저장소 연동.

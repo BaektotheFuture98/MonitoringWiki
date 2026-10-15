@@ -54,6 +54,8 @@ frontmatter: `id`(= 파일명, kebab-case), `summary`(증상·원인 한 줄 요
 **Lint**: 고아 페이지, 깨진 링크, 색인 불일치, 페이지와 `sources` 보고서의 서술 불일치, 오래된 인프라 페이지, 노드명·IP 기재, 중복 의심 패턴, confidence 대비 증거 부족.
 
 ## 6. 저장소와 변경 이력
+> PoC(2026-10-15)에서는 git 없이 파일로 읽고 쓰며 컴파일은 서버가 자동으로 한다(`2026-10-15-poc-auto-compile-api-design.md`). 아래 git 운영은 PoC 이후 `GitWikiStore`로 적용한다.
+
 - 위키 저장소는 git으로 변경 이력을 남기고 봇(Claude)이 직접 커밋한다. 승인은 입력 단계에서 이뤄지므로 PR 리뷰는 필수가 아니며 선택적으로 쓸 수 있다.
 - **`raw/`는 git에 넣지 않는다**(`.gitignore`). 개인정보가 git 이력과 원격에 영구히 남지 않게 하기 위함이며, raw는 서버 디스크에 두고 백업을 따로 한다.
 - 컴파일 결과는 `main`에 커밋해야 MCP 조회에 반영된다(MCP 서버는 `main`의 커밋된 상태만 읽음).
@@ -62,7 +64,7 @@ frontmatter: `id`(= 파일명, kebab-case), `summary`(증상·원인 한 줄 요
 ## 7. MCP 도구 인터페이스 (상세: `2026-10-14-mcp-server-design.md`)
 | 도구 | 방향 | 설명 |
 |---|---|---|
-| `submit_report(text)` | 쓰기 | 승인된 전체 보고서를 raw에 저장(컴파일은 담당자 수동). `submit` 토큰은 승인 주체에게만 발급 |
+| `submit_report(text)` | 쓰기 | 승인된 전체 보고서를 raw에 저장하고 서버가 자동 컴파일(PoC). `submit` 토큰은 승인 주체에게만 발급 |
 | `get_index()` | 읽기 | `wiki/index.md` 전체 반환(v1은 필터 없음). 후보 선택은 외부 에이전트의 LLM이 판단 |
 | `get_pattern(id, sections?)` | 읽기 | 패턴 페이지(또는 일부 섹션) 반환, `sources` 제외 |
 | `get_infra()` | 읽기 | `wiki/infra/cluster.md` 반환 |
