@@ -21,6 +21,10 @@ class ReportRejected(ValueError):
     """제출된 보고서가 저장 조건을 만족하지 않음."""
 
 
+class ReportTooLarge(ReportRejected):
+    """보고서가 크기 상한을 넘음(HTTP 413)."""
+
+
 @dataclass(frozen=True)
 class SaveResult:
     status: str
@@ -77,7 +81,7 @@ class RawStore:
             raise ReportRejected("NUL 문자가 포함된 보고서는 저장할 수 없습니다.")
         size = len(text.encode("utf-8"))
         if size > self.max_bytes:
-            raise ReportRejected(f"보고서가 너무 큽니다: {size} bytes (상한 {self.max_bytes})")
+            raise ReportTooLarge(f"보고서가 너무 큽니다: {size} bytes (상한 {self.max_bytes})")
 
     def _find_duplicate(self, digest: str) -> str | None:
         for path in self.iter_raw_files():
