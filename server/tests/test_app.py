@@ -1,46 +1,56 @@
 import asyncio
+import shutil
+from dataclasses import replace
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from conftest import make_settings, write_tokens
+from plans import FakePlanGenerator, plan_dict
 from starlette.testclient import TestClient
 
 from wiki_mcp.app import _authorization, build_services, create_app, create_mcp
+from wiki_mcp.config import ConfigError
 from wiki_mcp.wiki_reader import WikiReadError
 
-
-@pytest.fixture
-def settings(wiki_root, tmp_path):
-    s = make_settings(wiki_root, tmp_path)
-    write_tokens(s.tokens_file, ("query-agent", "read-secret", ["read"]))
-    return s
+REPO_CLAUDE_MD = Path(__file__).resolve().parents[2] / "CLAUDE.md"
 
 
-def test_healthz_without_token(settings):
-    with TestClient(create_app(settings)) as client:
+def test_healthz_without_token(server_settings):
+    with TestClient(create_app(server_settings, generator=FakePlanGenerator(plan_dict()))) as client:
         response = client.get("/healthz")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
 
 @pytest.mark.parametrize("headers", [{}, {"Authorization": "Bearer wrong"}])
-def test_mcp_requires_valid_token(settings, headers):
-    with TestClient(create_app(settings)) as client:
+def test_mcp_requires_valid_token(server_settings, headers):
+    with TestClient(create_app(server_settings, generator=FakePlanGenerator(plan_dict()))) as client:
         response = client.post("/mcp", json={}, headers=headers)
     assert response.status_code == 401
     assert response.headers["www-authenticate"] == "Bearer"
 
 
-def test_create_app_fails_without_index(settings):
-    (settings.wiki_root / "wiki" / "index.md").unlink()
+def test_create_app_fails_without_index(server_settings):
+    (server_settings.wiki_root / "wiki" / "index.md").unlink()
     with pytest.raises(WikiReadError):
-        create_app(settings)
+        create_app(server_settings, generator=FakePlanGenerator(plan_dict()))
 
 
-def test_tools_registered(settings):
-    mcp = create_mcp(build_services(settings), "가이드")
+def test_tools_registered(server_settings):
+    mcp = create_mcp(build_services(server_settings, generator=FakePlanGenerator(plan_dict())), "가이드")
     names = {tool.name for tool in asyncio.run(mcp.list_tools())}
     assert names == {"get_index", "get_pattern", "get_infra", "submit_report"}
+
+
+def test_build_services_requires_llm_settings(server_settings):
+    with pytest.raises(ConfigError, match="ANTHROPIC_API_KEY"):
+        build_services(server_settings)
+
+
+def test_build_services_with_llm_settings(server_settings):
+    shutil.copy(REPO_CLAUDE_MD, server_settings.wiki_root / "CLAUDE.md")
+    svc = build_services(replace(server_settings, anthropic_api_key="sk-test", llm_model="claude-test"))
+    assert svc.compiler.generator is not None
 
 
 def test_authorization_header_from_request():

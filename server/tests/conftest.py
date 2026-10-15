@@ -112,3 +112,15 @@ def wiki_root(tmp_path: Path) -> Path:
 @pytest.fixture
 def wiki_store(wiki_root: Path) -> FileWikiStore:
     return FileWikiStore(wiki_root)
+
+
+@pytest.fixture
+def server_settings(wiki_root: Path, tmp_path: Path) -> Settings:
+    settings = make_settings(wiki_root, tmp_path)
+    write_tokens(
+        settings.tokens_file,
+        ("query-agent", "read-secret", ["read"]),
+        ("web-backend", "submit-secret", ["submit"]),
+        ("infra-admin", "infra-secret", ["infra"]),
+    )
+    return settings

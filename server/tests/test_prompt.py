@@ -1,16 +1,14 @@
 import asyncio
 
 import pytest
-from conftest import make_settings, write_tokens
+from plans import FakePlanGenerator, plan_dict
 
 from wiki_mcp.app import ASK_PROMPT_NAME, build_ask_prompt, build_services, create_mcp
 
 
 @pytest.fixture
-def mcp(wiki_root, tmp_path):
-    settings = make_settings(wiki_root, tmp_path)
-    write_tokens(settings.tokens_file, ("query-agent", "read-secret", ["read"]))
-    return create_mcp(build_services(settings), "가이드")
+def mcp(server_settings):
+    return create_mcp(build_services(server_settings, generator=FakePlanGenerator(plan_dict())), "가이드")
 
 
 def test_prompt_name_is_ask():

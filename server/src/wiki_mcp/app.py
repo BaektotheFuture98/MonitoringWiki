@@ -5,6 +5,9 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
+from typing import Callable
+from zoneinfo import ZoneInfo
 
 import uvicorn
 from anyio import to_thread
@@ -16,7 +19,8 @@ from starlette.routing import Route
 from . import wiki_reader
 from .access_log import AccessLog
 from .auth import AuthError, TokenStore
-from .config import Settings, load_env_file, load_settings
+from .compile_service import CompileService, JobStore
+from .config import ConfigError, Settings, load_env_file, load_settings
 from .handlers import (
     Services,
     handle_get_index,
@@ -24,10 +28,13 @@ from .handlers import (
     handle_get_pattern,
     handle_submit_report,
 )
-from .instructions import load_instructions
+from .instructions import load_instructions, read_claude_md
+from .llm import AnthropicPlanGenerator, PlanGenerator, build_system_prompt
+from .masking import Masker, load_names
 from .ratelimit import RateLimiter
 from .raw_store import RawStore
-from .wiki_store import FileWikiStore
+from .wiki_store import FileWikiStore, WikiStore
+from .wiki_writer import WikiWriter
 
 SUBMIT_LIMIT_PER_MINUTE = 10
 
@@ -36,7 +43,8 @@ GET_PATTERN_DESCRIPTION = "패턴 페이지를 반환합니다. sections로 원�
 GET_INFRA_DESCRIPTION = "현재 클러스터 구성(티어, 역할별 노드 수, 버전)을 반환합니다. 패턴 일치 판단의 근거로는 쓰지 마세요."
 SUBMIT_DESCRIPTION = (
     "사람이 승인한 장애 보고서 전체(원인 판단·결론·권장 조치 포함)를 원문 그대로 제출합니다. "
-    "질문에는 절대 사용하지 마세요. 제출된 보고서는 담당자가 수동으로 컴파일한 뒤 위키에 반영됩니다."
+    "질문에는 절대 사용하지 마세요. 서버가 즉시 마스킹·컴파일해 위키에 반영하고 결과(status, job_id, "
+    "생성·갱신한 패턴)를 돌려줍니다. 대기 시간 안에 끝나지 않으면 status가 queued 또는 running이며 처리는 계속됩니다."
 )
 
 ASK_PROMPT_NAME = "ask"
@@ -69,14 +77,48 @@ def build_ask_prompt(question: str, allow_inference: bool) -> str:
     return f"{_ASK_COMMON}\n{closing}\n\n질문:\n{question.strip()}"
 
 
-def build_services(settings: Settings) -> Services:
+def _anthropic_generator(settings: Settings, wiki: WikiStore) -> AnthropicPlanGenerator:
+    if not settings.anthropic_api_key or not settings.llm_model:
+        raise ConfigError("ANTHROPIC_API_KEY와 WIKI_LLM_MODEL이 필요합니다(.env 또는 환경 변수).")
+    return AnthropicPlanGenerator(
+        api_key=settings.anthropic_api_key,
+        model=settings.llm_model,
+        system_prompt=build_system_prompt(read_claude_md(wiki)),
+        timeout=float(settings.compile_timeout),
+    )
+
+
+def build_services(
+    settings: Settings,
+    *,
+    generator: PlanGenerator | None = None,
+    now: Callable[[], datetime] | None = None,
+) -> Services:
+    tz = ZoneInfo(settings.tz)
+    now = now or (lambda: datetime.now(tz))
+    wiki = FileWikiStore(settings.wiki_root)
+    log = AccessLog(settings.access_log)
+    writer = WikiWriter(wiki, settings.state_root / "snapshots", settings.snapshot_keep, now)
+    compiler = CompileService(
+        raw_store=RawStore(settings.wiki_root, settings.tz, settings.max_report_bytes, now=now),
+        wiki=wiki,
+        writer=writer,
+        generator=generator or _anthropic_generator(settings, wiki),
+        masker=Masker(load_names(settings.mask_names_file)),
+        jobs=JobStore(settings.state_root / "jobs"),
+        log=log,
+        timeout=float(settings.compile_timeout),
+        now=now,
+    )
     return Services(
         settings=settings,
         tokens=TokenStore.load(settings.tokens_file),
-        wiki=FileWikiStore(settings.wiki_root),
-        store=RawStore(settings.wiki_root, settings.tz, settings.max_report_bytes),
+        wiki=wiki,
+        compiler=compiler,
+        writer=writer,
         limiter=RateLimiter(SUBMIT_LIMIT_PER_MINUTE, 60.0),
-        log=AccessLog(settings.access_log),
+        log=log,
+        now=now,
     )
 
 
@@ -109,7 +151,8 @@ def create_mcp(svc: Services, instructions: str) -> FastMCP:
     @mcp.tool(description=SUBMIT_DESCRIPTION)
     async def submit_report(text: str, ctx: Context) -> str:
         authorization = _authorization(ctx)
-        result = await to_thread.run_sync(lambda: handle_submit_report(svc, authorization, text))
+        wait = svc.settings.mcp_compile_wait_seconds
+        result = await to_thread.run_sync(lambda: handle_submit_report(svc, authorization, text, wait=wait))
         return json.dumps(result, ensure_ascii=False)
 
     @mcp.prompt(name=ASK_PROMPT_NAME, title="위키로만 답하기", description=ASK_PROMPT_DESCRIPTION)
@@ -139,8 +182,13 @@ class BearerAuthMiddleware:
         await self.app(scope, receive, send)
 
 
-def create_app(settings: Settings):
-    svc = build_services(settings)
+def create_app(
+    settings: Settings,
+    *,
+    generator: PlanGenerator | None = None,
+    now: Callable[[], datetime] | None = None,
+):
+    svc = build_services(settings, generator=generator, now=now)
     wiki_reader.check_wiki(svc.wiki)
     instructions = load_instructions(svc.wiki)
     app = create_mcp(svc, instructions).streamable_http_app()
