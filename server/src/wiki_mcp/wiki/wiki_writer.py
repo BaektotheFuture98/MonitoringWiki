@@ -11,8 +11,8 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Callable, Sequence
 
-from wiki_mcp.service.plan import CompilePlan, PlanError
-from wiki_mcp.store.wiki_pages import (
+from wiki_mcp.core.plan import CompilePlan, PlanError
+from wiki_mcp.wiki.wiki_pages import (
     add_related_link,
     append_log,
     confidence_for,
@@ -22,8 +22,8 @@ from wiki_mcp.store.wiki_pages import (
     update_index_infra_line,
     upsert_index_row,
 )
-from wiki_mcp.store.wiki_reader import INDEX_PATH, INFRA_PATH, LOG_PATH, pattern_path
-from wiki_mcp.store.wiki_store import WikiStore
+from wiki_mcp.wiki.wiki_reader import INDEX_PATH, INFRA_PATH, LOG_PATH, pattern_path
+from wiki_mcp.wiki.wiki_store import WikiStore
 
 INFRA_SNAPSHOT_LABEL = "infra"
 

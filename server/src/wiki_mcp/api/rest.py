@@ -8,9 +8,9 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
-from wiki_mcp.service.auth import AuthError, ScopeError
-from wiki_mcp.service.compile_service import JobNotFound, JobNotRetryable
-from wiki_mcp.service.handlers import (
+from wiki_mcp.core.auth import AuthError, ScopeError
+from wiki_mcp.services.compile_service import JobNotFound, JobNotRetryable
+from wiki_mcp.services.handlers import (
     Services,
     handle_get_guide,
     handle_get_index,
@@ -21,10 +21,10 @@ from wiki_mcp.service.handlers import (
     handle_submit_report,
     handle_update_infra,
 )
-from wiki_mcp.service.infra import InfraError, InfraSpec, Tier
-from wiki_mcp.service.ratelimit import RateLimited
-from wiki_mcp.store.raw_store import ReportRejected, ReportTooLarge
-from wiki_mcp.store.wiki_reader import InvalidRequest, PatternNotFound, WikiReadError
+from wiki_mcp.services.infra import InfraError, InfraSpec, Tier
+from wiki_mcp.core.ratelimit import RateLimited
+from wiki_mcp.wiki.raw_store import ReportRejected, ReportTooLarge
+from wiki_mcp.wiki.wiki_reader import InvalidRequest, PatternNotFound, WikiReadError
 
 SUBMIT_STATUS_CODES = {"compiled": 200, "duplicate": 200, "queued": 202, "running": 202, "failed": 502}
 # 처리기는 예외 계층의 가장 가까운 등록 항목을 쓰므로(PatternNotFound는 WikiReadError보다 우선) 순서는 상관없다.

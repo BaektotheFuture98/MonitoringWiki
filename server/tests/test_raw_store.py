@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from wiki_mcp.store.raw_store import (
+from wiki_mcp.wiki.raw_store import (
     DUPLICATE_MESSAGE,
     PENDING_MESSAGE,
     RawStore,

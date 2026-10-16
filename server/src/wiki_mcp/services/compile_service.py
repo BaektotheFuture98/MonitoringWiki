@@ -13,15 +13,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
 
-from wiki_mcp.service.access_log import AccessLog
-from wiki_mcp.service.llm import PlanGenerator
-from wiki_mcp.service.masking import Masker
-from wiki_mcp.service.plan import CompilePlan, PlanError, parse_plan
-from wiki_mcp.store.raw_store import DUPLICATE_MESSAGE, RawStore
-from wiki_mcp.store.wiki_pages import index_pattern_ids
-from wiki_mcp.store.wiki_reader import INDEX_PATH
-from wiki_mcp.store.wiki_store import WikiStore
-from wiki_mcp.store.wiki_writer import WikiWriter
+from wiki_mcp.services.access_log import AccessLog
+from wiki_mcp.services.llm import PlanGenerator
+from wiki_mcp.core.masking import Masker
+from wiki_mcp.core.plan import CompilePlan, PlanError, parse_plan
+from wiki_mcp.wiki.raw_store import DUPLICATE_MESSAGE, RawStore
+from wiki_mcp.wiki.wiki_pages import index_pattern_ids
+from wiki_mcp.wiki.wiki_reader import INDEX_PATH
+from wiki_mcp.wiki.wiki_store import WikiStore
+from wiki_mcp.wiki.wiki_writer import WikiWriter
 
 PLAN_ATTEMPTS = 2
 JOB_ID_RE = re.compile(r"[0-9a-f]{12}")

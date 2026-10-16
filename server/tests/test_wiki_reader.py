@@ -1,6 +1,6 @@
 import pytest
 
-from wiki_mcp.store import wiki_reader as wr
+from wiki_mcp.wiki import wiki_reader as wr
 
 
 def test_check_wiki_ok(wiki_store):

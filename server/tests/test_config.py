@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from wiki_mcp.config import ConfigError, load_env_file, load_settings
+from wiki_mcp.core.config import ConfigError, load_env_file, load_settings
 
 BASE = {
     "WIKI_ROOT": "/repo",

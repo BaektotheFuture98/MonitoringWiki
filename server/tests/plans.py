@@ -5,8 +5,8 @@ import copy
 from datetime import date
 from typing import Any, Iterable
 
-from wiki_mcp.service.masking import Masker
-from wiki_mcp.service.plan import CompilePlan, parse_plan
+from wiki_mcp.core.masking import Masker
+from wiki_mcp.core.plan import CompilePlan, parse_plan
 
 TODAY = date(2026, 10, 15)
 EXISTING_IDS = frozenset({"sample-pattern"})

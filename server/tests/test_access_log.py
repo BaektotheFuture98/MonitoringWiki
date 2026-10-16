@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, timezone
 
-from wiki_mcp.service.access_log import AccessLog, summarize_report
+from wiki_mcp.services.access_log import AccessLog, summarize_report
 
 
 def test_writes_json_line(tmp_path):

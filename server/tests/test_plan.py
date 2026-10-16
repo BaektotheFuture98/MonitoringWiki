@@ -3,8 +3,8 @@ from datetime import date
 import pytest
 from plans import TODAY, create_item, plan_dict, to_plan, update_item
 
-from wiki_mcp.service.masking import Masker
-from wiki_mcp.service.plan import PlanError, RelatedRef, is_unobserved, parse_plan
+from wiki_mcp.core.masking import Masker
+from wiki_mcp.core.plan import PlanError, RelatedRef, is_unobserved, parse_plan
 
 
 def parse(data, names=()):

@@ -8,8 +8,8 @@ from zoneinfo import ZoneInfo
 import pytest
 from plans import FakePlanGenerator, create_item, plan_dict
 
-from wiki_mcp.service.access_log import AccessLog
-from wiki_mcp.service.compile_service import (
+from wiki_mcp.services.access_log import AccessLog
+from wiki_mcp.services.compile_service import (
     RESTART_ERROR,
     CompileService,
     Job,
@@ -17,10 +17,10 @@ from wiki_mcp.service.compile_service import (
     JobNotRetryable,
     JobStore,
 )
-from wiki_mcp.service.masking import Masker
-from wiki_mcp.store.raw_store import DUPLICATE_MESSAGE, RawStore
-from wiki_mcp.store.wiki_store import FileWikiStore
-from wiki_mcp.store.wiki_writer import WikiWriter
+from wiki_mcp.core.masking import Masker
+from wiki_mcp.wiki.raw_store import DUPLICATE_MESSAGE, RawStore
+from wiki_mcp.wiki.wiki_store import FileWikiStore
+from wiki_mcp.wiki.wiki_writer import WikiWriter
 
 NOW = datetime(2026, 10, 15, 10, 0, tzinfo=ZoneInfo("Asia/Seoul"))
 REPORT = "승인된 보고서\nuser=kim@example.com host=10.0.0.1\n결론: 새 원인"

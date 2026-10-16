@@ -76,7 +76,7 @@ def require_scope(entry: TokenEntry, scope: str) -> None:
 def main(argv: list[str] | None = None) -> int:
     args = sys.argv[1:] if argv is None else argv
     if len(args) != 1:
-        print("사용법: python -m wiki_mcp.service.auth <토큰>", file=sys.stderr)
+        print("사용법: python -m wiki_mcp.core.auth <토큰>", file=sys.stderr)
         return 2
     print(hash_token(args[0]))
     return 0

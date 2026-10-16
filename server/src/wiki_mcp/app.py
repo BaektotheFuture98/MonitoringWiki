@@ -11,22 +11,22 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-from wiki_mcp.store import wiki_reader
-from wiki_mcp.service.access_log import AccessLog
+from wiki_mcp.wiki import wiki_reader
+from wiki_mcp.services.access_log import AccessLog
 from wiki_mcp.api.rest import create_api_router, install_error_handlers
-from wiki_mcp.service.auth import TokenStore
-from wiki_mcp.service.compile_service import CompileService, JobStore
-from wiki_mcp.config import ConfigError, Settings, load_env_file, load_settings
-from wiki_mcp.service.handlers import Services
+from wiki_mcp.core.auth import TokenStore
+from wiki_mcp.services.compile_service import CompileService, JobStore
+from wiki_mcp.core.config import ConfigError, Settings, load_env_file, load_settings
+from wiki_mcp.services.handlers import Services
 from wiki_mcp.instructions import load_instructions, read_agents_md
-from wiki_mcp.service.llm import AnthropicPlanGenerator, PlanGenerator, build_system_prompt
-from wiki_mcp.service.masking import Masker, load_names
+from wiki_mcp.services.llm import AnthropicPlanGenerator, PlanGenerator, build_system_prompt
+from wiki_mcp.core.masking import Masker, load_names
 from wiki_mcp.api.mcp_adapter import create_mcp
 from wiki_mcp.api.middleware import BearerAuthMiddleware
-from wiki_mcp.service.ratelimit import RateLimiter
-from wiki_mcp.store.raw_store import RawStore
-from wiki_mcp.store.wiki_store import FileWikiStore, WikiStore
-from wiki_mcp.store.wiki_writer import WikiWriter
+from wiki_mcp.core.ratelimit import RateLimiter
+from wiki_mcp.wiki.raw_store import RawStore
+from wiki_mcp.wiki.wiki_store import FileWikiStore, WikiStore
+from wiki_mcp.wiki.wiki_writer import WikiWriter
 
 SUBMIT_LIMIT_PER_MINUTE = 10
 HEALTH_PATH = "/healthz"

@@ -10,10 +10,10 @@ from pathlib import Path
 
 import pytest
 
-from wiki_mcp.config import load_env_file
-from wiki_mcp.service.llm import AnthropicPlanGenerator, build_system_prompt
-from wiki_mcp.service.masking import Masker
-from wiki_mcp.service.plan import parse_plan
+from wiki_mcp.core.config import load_env_file
+from wiki_mcp.services.llm import AnthropicPlanGenerator, build_system_prompt
+from wiki_mcp.core.masking import Masker
+from wiki_mcp.core.plan import parse_plan
 
 REPO = Path(__file__).resolve().parents[2]
 EMPTY_INDEX = (

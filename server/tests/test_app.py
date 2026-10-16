@@ -9,9 +9,9 @@ from plans import FakePlanGenerator, plan_dict
 from starlette.testclient import TestClient
 
 from wiki_mcp.app import build_services, create_app
-from wiki_mcp.config import ConfigError
+from wiki_mcp.core.config import ConfigError
 from wiki_mcp.api.mcp_adapter import _authorization, create_mcp
-from wiki_mcp.store.wiki_reader import WikiReadError
+from wiki_mcp.wiki.wiki_reader import WikiReadError
 
 READ = {"Authorization": "Bearer read-secret"}
 REPO_AGENTS_MD = Path(__file__).resolve().parents[2] / "AGENTS.md"

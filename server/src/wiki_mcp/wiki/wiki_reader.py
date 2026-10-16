@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 from typing import Sequence
 
-from wiki_mcp.store.wiki_store import WikiStore
+from wiki_mcp.wiki.wiki_store import WikiStore
 
 PATTERN_ID_RE = re.compile(r"[a-z0-9][a-z0-9-]*")
 SECTION_NAMES = ("원인", "증상", "해결방법", "관련 패턴")

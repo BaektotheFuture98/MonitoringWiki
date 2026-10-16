@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Iterable, Mapping, Sequence
 
-from wiki_mcp.service.plan import RESOURCES, PatternPlan, is_unobserved
-from wiki_mcp.store.wiki_reader import split_frontmatter
+from wiki_mcp.core.plan import RESOURCES, PatternPlan, is_unobserved
+from wiki_mcp.wiki.wiki_reader import split_frontmatter
 
 INDEX_HEADER_PREFIX = "| 패턴 |"
 INDEX_ID_RE = re.compile(r"^\| \[([a-z0-9][a-z0-9-]*)\]\(patterns/")

@@ -33,7 +33,7 @@ pip install -e .
 | `WIKI_HOST`, `WIKI_PORT` | `127.0.0.1`, `8000` | 바인드 주소 |
 
 ## 토큰 발급
-1. 토큰 문자열을 만들고 해시를 구합니다: `python -m wiki_mcp.service.auth <토큰>`
+1. 토큰 문자열을 만들고 해시를 구합니다: `python -m wiki_mcp.core.auth <토큰>`
 2. 토큰 파일(JSON 배열)에 해시만 저장합니다:
    ```json
    [
@@ -123,7 +123,7 @@ location / {
 ## 담당자 작업
 - 서버가 위키의 유일한 쓰기 주체입니다. `wiki/`를 직접 고치려면 서버를 멈춘 뒤에 하세요.
 - 컴파일 실패 확인: 제출 응답의 `error`, `GET /api/reports/{job_id}`, `<WIKI_STATE_DIR>/jobs/*.json`. 다시 처리: `POST /api/reports/{job_id}/retry`. 서버가 재시작되면 처리 중이던 작업은 `failed`로 바뀌므로 retry합니다.
-- 위키에 반영되지 않은 raw 목록: `WIKI_ROOT=<저장소> python -m wiki_mcp.service.pending`
+- 위키에 반영되지 않은 raw 목록: `WIKI_ROOT=<저장소> python -m wiki_mcp.services.pending`
 - 되돌리기: 서버를 멈추고 `<WIKI_STATE_DIR>/snapshots/<시각>-<작업ID>/`를 `wiki/`로 복사합니다(최근 `WIKI_SNAPSHOT_KEEP`개 보관).
 - 컴파일 품질 점검(실제 LLM 호출, 선택): `WIKI_LLM_EVAL=1 python -m pytest tests/test_llm_eval.py -v`
 

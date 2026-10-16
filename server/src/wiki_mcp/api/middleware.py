@@ -5,7 +5,7 @@ from typing import Any
 
 from starlette.responses import JSONResponse
 
-from wiki_mcp.service.auth import AuthError, TokenStore
+from wiki_mcp.core.auth import AuthError, TokenStore
 
 
 class BearerAuthMiddleware:
