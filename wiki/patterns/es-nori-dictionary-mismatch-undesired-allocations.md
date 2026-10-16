@@ -6,7 +6,7 @@ resources: [master]
 first_seen: 2025-03-24
 last_seen: 2025-03-25
 occurrences: 1
-sources: [raw/2025-03-24/133734_master.log, raw/2025-03-24/incident-note.md]
+sources: [raw/2025-03-24/133734.txt, raw/2025-03-24/133734-2.txt]
 solution_origin: human
 ---
 # Nori 사용자 사전 불일치로 인한 샤드 생성 실패와 undesired_allocations 증가

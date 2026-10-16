@@ -3031,7 +3031,7 @@ EMPTY_INDEX = (
     "|---|---|---|---|---|---|\n"
 )
 CASES = [
-    pytest.param(["raw/2025-03-24/133734_master.log", "raw/2025-03-24/incident-note.md"],
+    pytest.param(["raw/2025-03-24/133734.txt", "raw/2025-03-24/133734-2.txt"],
                  {"master"}, ["nori", "사전"], id="nori-dictionary"),
     pytest.param(["raw/2026-10-14/105317.txt"], {"query", "master"}, ["agg", "집계"], id="agg-query-slow"),
     pytest.param(["raw/2026-10-14/111932.txt"], {"query"}, ["템플릿"], id="template-conflict"),
