@@ -4,7 +4,7 @@ import pytest
 from plans import FakePlanGenerator, plan_dict
 
 from wiki_mcp.app import build_services
-from wiki_mcp.mcp_adapter import ASK_PROMPT_NAME, build_ask_prompt, create_mcp
+from wiki_mcp.api.mcp_adapter import ASK_PROMPT_NAME, build_ask_prompt, create_mcp
 
 
 @pytest.fixture

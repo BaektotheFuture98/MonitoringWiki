@@ -1,6 +1,6 @@
 """담당자용: 아직 위키에 반영되지 않은 raw 파일 목록을 출력한다(자동 컴파일이 실패한 보고서 확인용).
 
-사용법: WIKI_ROOT=<저장소> python -m wiki_mcp.pending
+사용법: WIKI_ROOT=<저장소> python -m wiki_mcp.service.pending
 """
 from __future__ import annotations
 
@@ -9,9 +9,9 @@ import re
 import sys
 from pathlib import Path
 
-from . import wiki_reader
-from .raw_store import IGNORED_NAMES
-from .wiki_store import FileWikiStore, WikiStore
+from wiki_mcp.store import wiki_reader
+from wiki_mcp.store.raw_store import IGNORED_NAMES
+from wiki_mcp.store.wiki_store import FileWikiStore, WikiStore
 
 RAW_PATH_RE = re.compile(r"raw/\d{4}-\d{2}-\d{2}/[^\s`'\"\],)]+")
 INGEST_HEADING_RE = re.compile(r"^## \[[^\]]*\] ingest\b")

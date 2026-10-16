@@ -4,9 +4,9 @@ from zoneinfo import ZoneInfo
 import pytest
 from plans import create_item, to_plan, update_item
 
-from wiki_mcp.plan import PlanError
-from wiki_mcp.wiki_store import FileWikiStore
-from wiki_mcp.wiki_writer import WikiWriter
+from wiki_mcp.service.plan import PlanError
+from wiki_mcp.store.wiki_store import FileWikiStore
+from wiki_mcp.store.wiki_writer import WikiWriter
 
 NOW = datetime(2026, 10, 15, 9, 30, tzinfo=ZoneInfo("Asia/Seoul"))
 RAW = "raw/2026-10-15/093000.txt"

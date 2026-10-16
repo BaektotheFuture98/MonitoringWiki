@@ -5,16 +5,16 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Callable, TypeVar
 
-from . import wiki_reader
-from .access_log import AccessLog, summarize_report
-from .auth import AuthError, TokenEntry, TokenStore, require_scope
-from .compile_service import CompileService
-from .config import Settings
-from .infra import InfraSpec, infra_summary, render_infra, validate_infra
-from .instructions import load_instructions
-from .ratelimit import RateLimiter
-from .wiki_store import WikiStore
-from .wiki_writer import WikiWriter
+from wiki_mcp.store import wiki_reader
+from wiki_mcp.service.access_log import AccessLog, summarize_report
+from wiki_mcp.service.auth import AuthError, TokenEntry, TokenStore, require_scope
+from wiki_mcp.service.compile_service import CompileService
+from wiki_mcp.config import Settings
+from wiki_mcp.service.infra import InfraSpec, infra_summary, render_infra, validate_infra
+from wiki_mcp.instructions import load_instructions
+from wiki_mcp.service.ratelimit import RateLimiter
+from wiki_mcp.store.wiki_store import WikiStore
+from wiki_mcp.store.wiki_writer import WikiWriter
 
 T = TypeVar("T")
 

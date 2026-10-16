@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Iterator
 
-from .masking import IPV4_RE
+from wiki_mcp.service.masking import IPV4_RE
 
 NODE_NAME_RE = re.compile(r"RC\d+-\d+", re.IGNORECASE)
 _DATE = r"(?:\d{4}[-./]\d{1,2}(?:[-./]\d{1,2})?|\d{4}년\s*\d{1,2}월)"

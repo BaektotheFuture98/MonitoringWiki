@@ -4,7 +4,7 @@ import pytest
 from conftest import INDEX_MD, LOG_MD, PATTERN_MD
 from plans import create_item, to_plan, update_item
 
-from wiki_mcp import wiki_pages as wp
+from wiki_mcp.store import wiki_pages as wp
 
 RAW = "raw/2026-10-15/100000.txt"
 RECEIVED = date(2026, 10, 15)

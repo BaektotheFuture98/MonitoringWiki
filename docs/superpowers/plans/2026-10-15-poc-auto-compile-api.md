@@ -1,5 +1,7 @@
 # PoC 자동 컴파일 REST API Implementation Plan
 
+> **참고:** 이 문서의 모듈 경로는 작성 당시의 평면 구조(`server/src/wiki_mcp/*.py`) 기준입니다. 현재는 `api/`, `service/`, `store/` 서브패키지로 나뉘어 있습니다(루트 `README.md` 참고).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 기존 MCP 서버에 FastAPI REST API를 붙여, 승인된 보고서를 한 번 호출로 제출하면 서버가 마스킹 → LLM 컴파일 계획 → 검증 → 위키 등록까지 끝내고, 조회와 인프라 갱신도 REST로 제공한다(git 없이 파일 기반).

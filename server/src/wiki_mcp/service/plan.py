@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any, Mapping
 
-from .masking import Masker
+from wiki_mcp.service.masking import Masker
 
 RESOURCES = ("query", "master", "data", "slowlog")
 UNOBSERVED_RE = re.compile(r"미관측\((?:수집 실패|이벤트 없음|입력 없음|로그 없음)\)")

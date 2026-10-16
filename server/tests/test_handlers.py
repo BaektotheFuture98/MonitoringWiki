@@ -7,9 +7,9 @@ import pytest
 from plans import FakePlanGenerator, create_item, plan_dict
 
 from wiki_mcp.app import build_services
-from wiki_mcp.auth import AuthError, ScopeError
-from wiki_mcp.compile_service import JobNotRetryable
-from wiki_mcp.handlers import (
+from wiki_mcp.service.auth import AuthError, ScopeError
+from wiki_mcp.service.compile_service import JobNotRetryable
+from wiki_mcp.service.handlers import (
     handle_get_guide,
     handle_get_index,
     handle_get_infra,
@@ -19,8 +19,8 @@ from wiki_mcp.handlers import (
     handle_submit_report,
     handle_update_infra,
 )
-from wiki_mcp.infra import InfraError, InfraSpec, Tier
-from wiki_mcp.ratelimit import RateLimited
+from wiki_mcp.service.infra import InfraError, InfraSpec, Tier
+from wiki_mcp.service.ratelimit import RateLimited
 
 READ = "Bearer read-secret"
 SUBMIT = "Bearer submit-secret"

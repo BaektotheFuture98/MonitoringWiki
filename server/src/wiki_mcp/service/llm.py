@@ -5,8 +5,8 @@ from typing import Any, Protocol
 
 import anthropic
 
-from .instructions import extract_section
-from .plan import RESOURCES
+from wiki_mcp.instructions import extract_section
+from wiki_mcp.service.plan import RESOURCES
 
 RULE_SECTIONS = ("지식 종류 구분과 처리", "Ingest (승인된 보고서 컴파일)", "시그니처 정규화", "개인정보", "패턴 페이지 형식")
 PLAN_TOOL_NAME = "submit_compile_plan"

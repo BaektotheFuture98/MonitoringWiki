@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from .raw_store import content_hash
+from wiki_mcp.store.raw_store import content_hash
 
 
 class AccessLog:

@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import pytest
 
 from wiki_mcp.instructions import InstructionsError
-from wiki_mcp.llm import (
+from wiki_mcp.service.llm import (
     PLAN_TOOL_NAME,
     RULE_SECTIONS,
     AnthropicPlanGenerator,

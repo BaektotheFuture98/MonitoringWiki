@@ -9,7 +9,7 @@ import json
 from anyio import to_thread
 from mcp.server.fastmcp import Context, FastMCP
 
-from .handlers import (
+from wiki_mcp.service.handlers import (
     Services,
     handle_get_index,
     handle_get_infra,

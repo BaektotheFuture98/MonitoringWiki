@@ -2,7 +2,7 @@ import threading
 
 import pytest
 
-from wiki_mcp.wiki_store import FileWikiStore, WikiPathError
+from wiki_mcp.store.wiki_store import FileWikiStore, WikiPathError
 
 
 @pytest.fixture

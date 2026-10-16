@@ -1,7 +1,7 @@
 """AGENTS.md에서 절을 추출한다. 외부 에이전트용 Query 가이드 절은 서버 instructions로 쓴다."""
 from __future__ import annotations
 
-from .wiki_store import WikiStore
+from wiki_mcp.store.wiki_store import WikiStore
 
 AGENTS_MD_PATH = "AGENTS.md"
 GUIDE_SECTION = "외부 에이전트용 Query 가이드"

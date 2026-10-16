@@ -1,5 +1,7 @@
 # MonitoringWiki MCP 서버 Implementation Plan
 
+> **참고:** 이 문서의 모듈 경로는 작성 당시의 평면 구조(`server/src/wiki_mcp/*.py`) 기준입니다. 현재는 `api/`, `service/`, `store/` 서브패키지로 나뉘어 있습니다(루트 `README.md` 참고).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 외부 에이전트가 MCP로 장애 패턴 위키를 조회하고, 승인 주체가 승인된 보고서를 raw에 제출할 수 있는 Python MCP 서버를 만든다.

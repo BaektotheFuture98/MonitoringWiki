@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from wiki_mcp.auth import hash_token
+from wiki_mcp.service.auth import hash_token
 from wiki_mcp.config import Settings
-from wiki_mcp.wiki_store import FileWikiStore
+from wiki_mcp.store.wiki_store import FileWikiStore
 
 AGENTS_MD = """# 규칙
 

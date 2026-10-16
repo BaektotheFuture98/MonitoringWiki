@@ -1,6 +1,6 @@
 from conftest import write
 
-from wiki_mcp.pending import main, pending_raw_files, referenced_raw_paths
+from wiki_mcp.service.pending import main, pending_raw_files, referenced_raw_paths
 
 
 def add_raw(root, rel, text="보고서"):

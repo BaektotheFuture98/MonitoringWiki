@@ -4,8 +4,8 @@ from datetime import date
 import pytest
 from conftest import write_tokens
 
-from wiki_mcp.auth import TokenStore, require_scope
-from wiki_mcp.infra import InfraError, InfraSpec, Tier, infra_summary, render_infra, validate_infra
+from wiki_mcp.service.auth import TokenStore, require_scope
+from wiki_mcp.service.infra import InfraError, InfraSpec, Tier, infra_summary, render_infra, validate_infra
 
 SPEC = InfraSpec(
     version="8.12.2",

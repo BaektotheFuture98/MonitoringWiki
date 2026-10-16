@@ -1,6 +1,6 @@
 import pytest
 
-from wiki_mcp.masking import Masker, load_names
+from wiki_mcp.service.masking import Masker, load_names
 
 QUERY_LOG = (
     "run_time=25.24 success=Y host=10.1.2.3 service=web company=acme user=kim@example.com "
