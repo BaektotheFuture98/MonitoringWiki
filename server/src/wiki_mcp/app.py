@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import contextlib
+from collections.abc import AsyncGenerator
 from datetime import datetime
-from typing import AsyncIterator, Callable
+from typing import Callable
 from zoneinfo import ZoneInfo
 
 import uvicorn
@@ -89,7 +90,7 @@ def create_app(
     mcp_app = mcp.streamable_http_app()  # session_manager는 이 호출 뒤에 생긴다
 
     @contextlib.asynccontextmanager
-    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         # 하위 앱의 lifespan은 실행되지 않으므로 MCP 세션 관리자를 여기서 직접 실행한다(SPIKE.md 조건 1).
         svc.compiler.start()
         try:
