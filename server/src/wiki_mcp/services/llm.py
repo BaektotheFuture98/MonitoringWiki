@@ -21,8 +21,8 @@ SERVER_RULES = f"""너는 승인된 Elasticsearch 장애 보고서를 위키 컴
 - occurrences, sources, confidence, 색인 행, 작업 로그는 서버가 계산한다. 계획에 넣지 않는다.
 - 색인의 요약과 대표 시그니처를 보고 의미가 같은 기존 패턴이 있으면 action=update로 그 id를 쓰고, 없으면 action=create로 새 kebab-case id를 만든다.
 - create에는 title(페이지 제목), summary(증상과 원인을 담은 한 줄, 200자 이하), signature(색인의 대표 시그니처), cause(보고서의 원인 판단·결론), solution(보고서의 권장 조치)을 모두 쓴다.
-- update에서 보고서의 원인·해결이 기존 패턴과 같으면 cause와 solution을 빈 문자열로 둔다. 다르면 보고서 내용만 적는다(서버가 "(추가 보고서)"로 덧붙인다).
-- resources에는 로그 원문 증거가 있는 리소스만 넣고, 그 리소스의 symptoms에 관측 내용을 적는다. 나머지 리소스의 symptoms는 미관측(수집 실패|이벤트 없음|입력 없음|로그 없음) 중 하나로 적거나 생략한다.
+- cause와 solution 키는 create와 update 모두에 항상 포함한다. update에서 보고서의 원인·해결이 기존 패턴과 같으면 빈 문자열로 둔다. 다르면 보고서 내용만 적는다(서버가 "(추가 보고서)"로 덧붙인다).
+- resources에는 로그 원문 증거가 있는 리소스만 넣고, 그 리소스의 symptoms에 관측 내용을 적는다. symptoms에는 네 리소스 키를 모두 쓰고, 증거가 없는 리소스는 미관측(수집 실패|이벤트 없음|입력 없음|로그 없음) 중 하나로 적는다.
 - first_seen과 last_seen은 보고서에 나온 장애 발생 날짜(YYYY-MM-DD)다. 모르면 생략한다.
 - 보고서의 구성 정보(노드 수, 티어, 버전 등)는 위키에 쓰지 않고 infra_candidates로만 낸다.
 - 리소스를 판별할 수 없는 부분은 unclassified에, 호출자에게 알릴 사항은 notes에 적는다.
@@ -50,6 +50,7 @@ PLAN_SCHEMA: dict[str, Any] = {
                     "symptoms": {
                         "type": "object",
                         "properties": {resource: _TEXT for resource in RESOURCES},
+                        "required": list(RESOURCES),
                         "additionalProperties": False,
                     },
                     "solution": _TEXT,
@@ -64,7 +65,7 @@ PLAN_SCHEMA: dict[str, Any] = {
                     "first_seen": {"type": "string", "description": "YYYY-MM-DD"},
                     "last_seen": {"type": "string", "description": "YYYY-MM-DD"},
                 },
-                "required": ["action", "id", "resources", "symptoms"],
+                "required": ["action", "id", "resources", "cause", "symptoms", "solution"],
             },
         },
         "infra_candidates": {

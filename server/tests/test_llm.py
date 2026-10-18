@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from wiki_mcp.instructions import InstructionsError
+from wiki_mcp.core.plan import RESOURCES
 from wiki_mcp.services.llm import (
     PLAN_SCHEMA,
     RULE_SECTIONS,
@@ -100,3 +101,9 @@ def test_client_error_hides_message():
 def test_default_client_is_built_without_network():
     built = GeminiPlanGenerator(api_key="key-secret", model="m", system_prompt="s", timeout=5)
     assert "key-secret" not in repr(built)
+
+
+def test_plan_schema_requires_cause_solution_and_all_resources():
+    item = PLAN_SCHEMA["properties"]["patterns"]["items"]
+    assert {"cause", "solution", "symptoms", "resources"} <= set(item["required"])
+    assert set(item["properties"]["symptoms"]["required"]) == set(RESOURCES)
