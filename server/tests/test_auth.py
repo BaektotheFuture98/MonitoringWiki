@@ -57,3 +57,17 @@ def test_load_rejects_empty(tmp_path):
 def test_hash_cli(capsys):
     assert main(["read-secret"]) == 0
     assert capsys.readouterr().out.strip() == hash_token("read-secret")
+
+
+def test_open_store_accepts_any_request_as_anonymous():
+    store = TokenStore.open()
+    for header in (None, "", "Bearer wrong"):
+        entry = store.authenticate(header)
+        assert entry.name == "anonymous"
+        for scope in ("read", "submit", "infra"):
+            require_scope(entry, scope)
+
+
+def test_closed_store_still_requires_tokens():
+    with pytest.raises(ValueError):
+        TokenStore([])

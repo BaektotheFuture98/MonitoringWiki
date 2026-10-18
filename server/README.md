@@ -27,6 +27,7 @@ pip install -e .
 | `WIKI_MCP_COMPILE_WAIT_SECONDS` | `30` | MCP `submit_report`의 동기 대기 시간 |
 | `WIKI_COMPILE_TIMEOUT` | `300` | 작업 하나의 제한 시간 |
 | `WIKI_SNAPSHOT_KEEP` | `20` | 스냅샷 보관 개수 |
+| `WIKI_AUTH_DISABLED` | `false` | `true`면 토큰 인증을 끄고 모든 요청에 전체 권한을 줍니다(내부망 테스트 전용). 이때 `WIKI_TOKENS_FILE`은 필요 없고, 접근 로그에는 `anonymous`로 남습니다 |
 | `WIKI_ENABLE_DOCS` | `false` | `/docs`, `/redoc`, `/openapi.json` 노출(켜면 토큰 없이 열림) |
 | `WIKI_TZ` | `Asia/Seoul` | raw 파일명·기준일 시간대 |
 | `WIKI_MAX_REPORT_BYTES` | `1048576` | 제출 크기 상한 |

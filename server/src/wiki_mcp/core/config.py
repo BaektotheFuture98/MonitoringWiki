@@ -22,7 +22,7 @@ class ConfigError(Exception):
 class Settings:
     wiki_root: Path
     tz: str
-    tokens_file: Path
+    tokens_file: Path | None
     access_log: Path
     max_report_bytes: int
     host: str
@@ -36,6 +36,7 @@ class Settings:
     compile_timeout: int = 300
     snapshot_keep: int = 20
     enable_docs: bool = False
+    auth_disabled: bool = False
 
     @property
     def state_root(self) -> Path:
@@ -92,10 +93,11 @@ def _bool(env: Mapping[str, str], key: str, default: bool) -> bool:
 
 def load_settings(env: Mapping[str, str] | None = None) -> Settings:
     env = os.environ if env is None else env
+    auth_disabled = _bool(env, "WIKI_AUTH_DISABLED", False)
     return Settings(
         wiki_root=Path(_required(env, "WIKI_ROOT")),
         tz=_optional(env, "WIKI_TZ", "Asia/Seoul"),
-        tokens_file=Path(_required(env, "WIKI_TOKENS_FILE")),
+        tokens_file=_optional_path(env, "WIKI_TOKENS_FILE") if auth_disabled else Path(_required(env, "WIKI_TOKENS_FILE")),
         access_log=Path(_required(env, "WIKI_ACCESS_LOG")),
         max_report_bytes=_positive_int(env, "WIKI_MAX_REPORT_BYTES", 1_048_576),
         host=_optional(env, "WIKI_HOST", "127.0.0.1"),
@@ -109,4 +111,5 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         compile_timeout=_positive_int(env, "WIKI_COMPILE_TIMEOUT", 300),
         snapshot_keep=_positive_int(env, "WIKI_SNAPSHOT_KEEP", 20),
         enable_docs=_bool(env, "WIKI_ENABLE_DOCS", False),
+        auth_disabled=auth_disabled,
     )

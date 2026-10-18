@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import contextlib
+import sys
 from collections.abc import AsyncGenerator
 from datetime import datetime
 from typing import Callable
@@ -68,7 +69,7 @@ def build_services(
     )
     return Services(
         settings=settings,
-        tokens=TokenStore.load(settings.tokens_file),
+        tokens=TokenStore.open() if settings.auth_disabled else TokenStore.load(settings.tokens_file),
         wiki=wiki,
         compiler=compiler,
         writer=writer,
@@ -127,4 +128,6 @@ def create_app(
 def main() -> None:
     load_env_file()
     settings = load_settings()
+    if settings.auth_disabled:
+        print("경고: WIKI_AUTH_DISABLED=true. 토큰 인증이 꺼져 있습니다(내부망 테스트 전용).", file=sys.stderr)
     uvicorn.run(create_app(settings), host=settings.host, port=settings.port)

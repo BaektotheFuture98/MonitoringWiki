@@ -94,3 +94,12 @@ def test_load_env_file_does_not_override_existing(tmp_path, monkeypatch):
 def test_load_env_file_missing_is_not_error(tmp_path, monkeypatch):
     monkeypatch.setenv("WIKI_ENV_FILE", str(tmp_path / "none.env"))
     assert load_env_file() is False
+
+
+def test_auth_disabled_does_not_need_tokens_file():
+    env = {key: value for key, value in BASE.items() if key != "WIKI_TOKENS_FILE"}
+    with pytest.raises(ConfigError, match="WIKI_TOKENS_FILE"):
+        load_settings(env)
+    s = load_settings({**env, "WIKI_AUTH_DISABLED": "true"})
+    assert s.auth_disabled is True and s.tokens_file is None
+    assert load_settings(BASE).auth_disabled is False

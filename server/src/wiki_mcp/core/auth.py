@@ -30,11 +30,20 @@ def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
+ANONYMOUS = TokenEntry("anonymous", "", VALID_SCOPES)
+
+
 class TokenStore:
-    def __init__(self, entries: list[TokenEntry]) -> None:
-        if not entries:
+    def __init__(self, entries: list[TokenEntry], *, open_access: bool = False) -> None:
+        if not entries and not open_access:
             raise ValueError("토큰이 하나 이상 필요합니다.")
         self.entries = entries
+        self.open_access = open_access
+
+    @classmethod
+    def open(cls) -> "TokenStore":
+        """인증을 끈 저장소(내부망 테스트용). 모든 요청을 모든 스코프를 가진 anonymous로 취급한다."""
+        return cls([], open_access=True)
 
     @classmethod
     def load(cls, path: Path) -> "TokenStore":
@@ -52,6 +61,8 @@ class TokenStore:
         return cls(entries)
 
     def authenticate(self, authorization: str | None) -> TokenEntry:
+        if self.open_access:
+            return ANONYMOUS
         if not authorization:
             raise AuthError("Bearer 토큰이 필요합니다.")
         scheme, _, token = authorization.partition(" ")
