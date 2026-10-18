@@ -18,8 +18,8 @@ pip install -e .
 | `WIKI_ROOT` | (필수) | 위키 저장소 경로 |
 | `WIKI_TOKENS_FILE` | (필수) | 토큰 파일 경로 |
 | `WIKI_ACCESS_LOG` | (필수) | 접근 로그 경로(저장소 밖) |
-| `ANTHROPIC_API_KEY` | (필수) | LLM 호출 키. `.env`에 둡니다 |
-| `WIKI_LLM_MODEL` | (필수) | 컴파일에 쓸 모델 이름 |
+| `GEMINI_API_KEY` | (필수) | Gemini API 키. `.env`에 둡니다 |
+| `WIKI_LLM_MODEL` | (필수) | 컴파일에 쓸 Gemini 모델 이름 |
 | `WIKI_ENV_FILE` | `.env` | 읽을 `.env` 경로 |
 | `WIKI_STATE_DIR` | `<WIKI_ROOT>/.state` | 작업 기록(`jobs/`)과 스냅샷(`snapshots/`) |
 | `WIKI_MASK_NAMES_FILE` | (선택) | 마스킹할 회사·고객명 목록(한 줄에 하나, `#` 주석) |

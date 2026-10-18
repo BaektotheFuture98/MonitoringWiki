@@ -1,7 +1,7 @@
 """실제 LLM으로 기존 보고서를 컴파일해 보는 평가 사례(선택 실행).
 
 실행(server/에서): WIKI_LLM_EVAL=1 python -m pytest tests/test_llm_eval.py -v
-키와 모델은 환경 변수나 server/.env(ANTHROPIC_API_KEY, WIKI_LLM_MODEL)에서 읽는다.
+키와 모델은 환경 변수나 server/.env(GEMINI_API_KEY, WIKI_LLM_MODEL)에서 읽는다.
 raw/는 git에 없으므로 저장소의 raw 파일이 있는 서버에서만 의미가 있다.
 """
 import os
@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from wiki_mcp.core.config import load_env_file
-from wiki_mcp.services.llm import AnthropicPlanGenerator, build_system_prompt
+from wiki_mcp.services.llm import GeminiPlanGenerator, build_system_prompt
 from wiki_mcp.core.masking import Masker
 from wiki_mcp.core.plan import parse_plan
 
@@ -34,8 +34,8 @@ pytestmark = pytest.mark.skipif(os.environ.get("WIKI_LLM_EVAL") != "1",
 @pytest.fixture(scope="module")
 def generator():
     load_env_file()
-    return AnthropicPlanGenerator(
-        api_key=os.environ["ANTHROPIC_API_KEY"],
+    return GeminiPlanGenerator(
+        api_key=os.environ["GEMINI_API_KEY"],
         model=os.environ["WIKI_LLM_MODEL"],
         system_prompt=build_system_prompt((REPO / "AGENTS.md").read_text(encoding="utf-8")),
         timeout=300,

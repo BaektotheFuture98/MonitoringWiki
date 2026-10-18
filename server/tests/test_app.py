@@ -82,13 +82,13 @@ def test_tools_registered(server_settings):
 
 
 def test_build_services_requires_llm_settings(server_settings):
-    with pytest.raises(ConfigError, match="ANTHROPIC_API_KEY"):
+    with pytest.raises(ConfigError, match="GEMINI_API_KEY"):
         build_services(server_settings)
 
 
 def test_build_services_with_llm_settings(server_settings):
     shutil.copy(REPO_AGENTS_MD, server_settings.wiki_root / "AGENTS.md")
-    svc = build_services(replace(server_settings, anthropic_api_key="sk-test", llm_model="claude-test"))
+    svc = build_services(replace(server_settings, gemini_api_key="test-key", llm_model="gemini-test"))
     assert svc.compiler.generator is not None
 
 

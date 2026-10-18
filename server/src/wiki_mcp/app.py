@@ -19,7 +19,7 @@ from wiki_mcp.services.compile_service import CompileService, JobStore
 from wiki_mcp.core.config import ConfigError, Settings, load_env_file, load_settings
 from wiki_mcp.services.handlers import Services
 from wiki_mcp.instructions import load_instructions, read_agents_md
-from wiki_mcp.services.llm import AnthropicPlanGenerator, PlanGenerator, build_system_prompt
+from wiki_mcp.services.llm import GeminiPlanGenerator, PlanGenerator, build_system_prompt
 from wiki_mcp.core.masking import Masker, load_names
 from wiki_mcp.api.mcp_adapter import create_mcp
 from wiki_mcp.api.middleware import BearerAuthMiddleware
@@ -33,11 +33,11 @@ HEALTH_PATH = "/healthz"
 DOCS_PATHS = ("/docs", "/redoc", "/openapi.json")
 
 
-def _anthropic_generator(settings: Settings, wiki: WikiStore) -> AnthropicPlanGenerator:
-    if not settings.anthropic_api_key or not settings.llm_model:
-        raise ConfigError("ANTHROPIC_API_KEY와 WIKI_LLM_MODEL이 필요합니다(.env 또는 환경 변수).")
-    return AnthropicPlanGenerator(
-        api_key=settings.anthropic_api_key,
+def _gemini_generator(settings: Settings, wiki: WikiStore) -> GeminiPlanGenerator:
+    if not settings.gemini_api_key or not settings.llm_model:
+        raise ConfigError("GEMINI_API_KEY와 WIKI_LLM_MODEL이 필요합니다(.env 또는 환경 변수).")
+    return GeminiPlanGenerator(
+        api_key=settings.gemini_api_key,
         model=settings.llm_model,
         system_prompt=build_system_prompt(read_agents_md(wiki)),
         timeout=float(settings.compile_timeout),
@@ -59,7 +59,7 @@ def build_services(
         raw_store=RawStore(settings.wiki_root, settings.tz, settings.max_report_bytes, now=now),
         wiki=wiki,
         writer=writer,
-        generator=generator or _anthropic_generator(settings, wiki),
+        generator=generator or _gemini_generator(settings, wiki),
         masker=Masker(load_names(settings.mask_names_file)),
         jobs=JobStore(settings.state_root / "jobs"),
         log=log,

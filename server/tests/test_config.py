@@ -9,8 +9,8 @@ BASE = {
     "WIKI_ROOT": "/repo",
     "WIKI_TOKENS_FILE": "/etc/wiki/tokens.json",
     "WIKI_ACCESS_LOG": "/var/log/wiki/access.jsonl",
-    "ANTHROPIC_API_KEY": "sk-test-secret",
-    "WIKI_LLM_MODEL": "claude-test",
+    "GEMINI_API_KEY": "sk-test-secret",
+    "WIKI_LLM_MODEL": "gemini-test",
 }
 
 
@@ -23,7 +23,7 @@ def test_defaults():
     assert s.max_report_bytes == 1_048_576
     assert (s.host, s.port) == ("127.0.0.1", 8000)
     assert s.state_root == Path("/repo") / ".state"
-    assert (s.anthropic_api_key, s.llm_model) == ("sk-test-secret", "claude-test")
+    assert (s.gemini_api_key, s.llm_model) == ("sk-test-secret", "gemini-test")
     assert s.mask_names_file is None
     assert (s.compile_wait_seconds, s.mcp_compile_wait_seconds, s.compile_timeout) == (90, 30, 300)
     assert s.snapshot_keep == 20
@@ -53,7 +53,7 @@ def test_overrides():
 
 
 @pytest.mark.parametrize(
-    "missing", ["WIKI_ROOT", "WIKI_TOKENS_FILE", "WIKI_ACCESS_LOG", "ANTHROPIC_API_KEY", "WIKI_LLM_MODEL"]
+    "missing", ["WIKI_ROOT", "WIKI_TOKENS_FILE", "WIKI_ACCESS_LOG", "GEMINI_API_KEY", "WIKI_LLM_MODEL"]
 )
 def test_missing_required(missing):
     env = {k: v for k, v in BASE.items() if k != missing}

@@ -28,7 +28,7 @@ class Settings:
     host: str
     port: int
     state_dir: Path | None = None
-    anthropic_api_key: str = field(default="", repr=False)
+    gemini_api_key: str = field(default="", repr=False)
     llm_model: str = ""
     mask_names_file: Path | None = None
     compile_wait_seconds: int = 90
@@ -101,7 +101,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         host=_optional(env, "WIKI_HOST", "127.0.0.1"),
         port=_positive_int(env, "WIKI_PORT", 8000),
         state_dir=_optional_path(env, "WIKI_STATE_DIR"),
-        anthropic_api_key=_required(env, "ANTHROPIC_API_KEY"),
+        gemini_api_key=_required(env, "GEMINI_API_KEY"),
         llm_model=_required(env, "WIKI_LLM_MODEL"),
         mask_names_file=_optional_path(env, "WIKI_MASK_NAMES_FILE"),
         compile_wait_seconds=_positive_int(env, "WIKI_COMPILE_WAIT_SECONDS", 90),
