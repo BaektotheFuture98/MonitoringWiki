@@ -13,16 +13,6 @@ READ = {"Authorization": "Bearer read-secret"}
 SUBMIT = {"Authorization": "Bearer submit-secret"}
 INFRA = {"Authorization": "Bearer infra-secret"}
 NOW = datetime(2026, 10, 15, 10, 0, tzinfo=ZoneInfo("Asia/Seoul"))
-INFRA_BODY = {
-    "version": "8.12.2",
-    "nodes": {"master": 3, "client": 5, "data": 60},
-    "tiers": [
-        {"name": "HOT", "data_nodes": 20, "racks": ["RC12"]},
-        {"name": "WARM", "data_nodes": 40, "racks": ["RC10", "RC17"]},
-    ],
-    "notes": [],
-    "unconfirmed": ["하드웨어 사양"],
-}
 
 
 @pytest.fixture
@@ -36,30 +26,16 @@ def client(server_settings, generator):
         yield test_client
 
 
-def test_read_endpoints(client):
-    assert "[sample-pattern]" in client.get("/api/index", headers=READ).json()["text"]
-    body = client.get("/api/patterns/sample-pattern", params={"sections": "원인,해결방법"}, headers=READ).json()
-    assert "## 원인" in body["text"] and "## 해결방법" in body["text"] and "## 증상" not in body["text"]
+def test_read_infra(client):
     assert "# 클러스터 구성" in client.get("/api/infra", headers=READ).json()["text"]
-    assert "외부 가이드 본문입니다." in client.get("/api/guide", headers=READ).json()["text"]
-
-
-@pytest.mark.parametrize("path, status, code", [
-    ("/api/patterns/no-such", 404, "not_found"),
-    ("/api/patterns/Bad_ID", 422, "invalid_request"),
-    ("/api/patterns/sample-pattern?sections=근거", 422, "invalid_request"),
-])
-def test_pattern_errors(client, path, status, code):
-    response = client.get(path, headers=READ)
-    assert (response.status_code, response.json()["code"]) == (status, code)
 
 
 def test_auth_errors(client):
-    response = client.get("/api/index")
+    response = client.get("/api/infra")
     assert response.status_code == 401
     assert response.headers["www-authenticate"] == "Bearer"
     assert response.json() == {"error": "Bearer 토큰이 필요합니다.", "code": "unauthenticated"}
-    response = client.get("/api/index", headers=SUBMIT)
+    response = client.get("/api/infra", headers=SUBMIT)
     assert (response.status_code, response.json()["code"]) == (403, "forbidden")
 
 
@@ -134,25 +110,3 @@ def test_submit_rate_limited(client):
     response = client.post("/api/reports", json={"text": "보고서 10"}, headers=SUBMIT)
     assert (response.status_code, response.json()["code"]) == (429, "rate_limited")
 
-
-def test_update_infra(client, server_settings):
-    response = client.put("/api/infra", json=INFRA_BODY, headers=INFRA)
-    assert response.status_code == 200
-    assert (response.json()["status"], response.json()["as_of"]) == ("updated", "2026-10-15")
-    page = (server_settings.wiki_root / "wiki" / "infra" / "cluster.md").read_text(encoding="utf-8")
-    assert "| HOT | 20 | RC12 |" in page and "source: API(infra-admin)" in page
-
-
-@pytest.mark.parametrize("change, code", [
-    ({"nodes": {"master": 3, "client": 5, "data": 61}}, "invalid_infra"),
-    ({"notes": ["노드 10.0.0.1 교체"]}, "invalid_infra"),
-    ({"nodes": {"master": -1, "client": 5, "data": 60}}, "invalid_request"),
-    ({"unknown": 1}, "invalid_request"),
-])
-def test_update_infra_rejects(client, change, code):
-    response = client.put("/api/infra", json={**INFRA_BODY, **change}, headers=INFRA)
-    assert (response.status_code, response.json()["code"]) == (422, code)
-
-
-def test_update_infra_requires_infra_scope(client):
-    assert client.put("/api/infra", json=INFRA_BODY, headers=SUBMIT).status_code == 403

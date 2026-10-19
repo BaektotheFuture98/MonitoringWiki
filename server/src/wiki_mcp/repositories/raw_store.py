@@ -11,18 +11,12 @@ from zoneinfo import ZoneInfo
 
 from filelock import FileLock
 
+from wiki_mcp.core.errors import ReportRejected, ReportTooLarge
+
 PENDING_MESSAGE = "raw 저장 완료. 자동 컴파일 대기열에 넣었습니다."
 DUPLICATE_MESSAGE = "동일한 내용의 보고서가 이미 저장되어 있어 저장하지 않았습니다."
 LOCK_NAME = ".submit.lock"
 IGNORED_NAMES = {LOCK_NAME, ".gitkeep"}
-
-
-class ReportRejected(ValueError):
-    """제출된 보고서가 저장 조건을 만족하지 않음."""
-
-
-class ReportTooLarge(ReportRejected):
-    """보고서가 크기 상한을 넘음(HTTP 413)."""
 
 
 @dataclass(frozen=True)
@@ -68,6 +62,9 @@ class RawStore:
                 return SaveResult("duplicate", existing, DUPLICATE_MESSAGE)
             path = self._create_file(text)
         return SaveResult("saved", path, PENDING_MESSAGE)
+
+    def read(self, path: str) -> str:
+        return (self.root / path).read_text(encoding="utf-8")
 
     def iter_raw_files(self) -> Iterator[Path]:
         for path in sorted(self.raw_dir.rglob("*")):

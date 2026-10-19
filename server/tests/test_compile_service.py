@@ -8,19 +8,16 @@ from zoneinfo import ZoneInfo
 import pytest
 from plans import FakePlanGenerator, create_item, plan_dict
 
-from wiki_mcp.services.access_log import AccessLog
+from wiki_mcp.core.errors import JobNotFound, JobNotRetryable
 from wiki_mcp.services.compile_service import (
     RESTART_ERROR,
     CompileService,
-    Job,
-    JobNotFound,
-    JobNotRetryable,
-    JobStore,
 )
+from wiki_mcp.repositories.job_store import Job, JobStore
 from wiki_mcp.core.masking import Masker
-from wiki_mcp.wiki.raw_store import DUPLICATE_MESSAGE, RawStore
-from wiki_mcp.wiki.wiki_store import FileWikiStore
-from wiki_mcp.wiki.wiki_writer import WikiWriter
+from wiki_mcp.repositories.raw_store import DUPLICATE_MESSAGE, RawStore
+from wiki_mcp.repositories.store import FileWikiStore
+from wiki_mcp.services.wiki_writer import WikiWriter
 
 NOW = datetime(2026, 10, 15, 10, 0, tzinfo=ZoneInfo("Asia/Seoul"))
 REPORT = "승인된 보고서\nuser=kim@example.com host=10.0.0.1\n결론: 새 원인"
@@ -36,7 +33,6 @@ def build(root, state, generator, *, timeout=300.0, clock=time.monotonic):
         generator=generator,
         masker=Masker(),
         jobs=JobStore(state / "jobs"),
-        log=AccessLog(state / "access.jsonl"),
         timeout=timeout,
         now=lambda: NOW,
         clock=clock,
@@ -83,11 +79,6 @@ def test_submit_compiles_and_registers(make_service, wiki_root, state):
     sent = generator.calls[0]["masked_text"]
     assert "kim@example.com" not in sent and "10.0.0.1" not in sent and "user=<USER>" in sent
     assert "[sample-pattern]" in generator.calls[0]["index_text"]
-    log_text = (state / "access.jsonl").read_text(encoding="utf-8")
-    record = json.loads(log_text.splitlines()[-1])
-    assert (record["token"], record["tool"], record["status"]) == ("web", "compile", "compiled")
-    assert record["args"] == {"job_id": view["job_id"], "raw_path": view["raw_path"]}
-    assert "승인된 보고서" not in log_text
     saved = json.loads((state / "jobs" / f"{view['job_id']}.json").read_text(encoding="utf-8"))
     assert saved["status"] == "compiled"
 

@@ -6,19 +6,15 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Iterable, Mapping, Sequence
 
-from wiki_mcp.core.plan import RESOURCES, PatternPlan, is_unobserved
-from wiki_mcp.wiki.wiki_reader import split_frontmatter
+from wiki_mcp.core.markdown import Sections, split_frontmatter, split_sections
+from wiki_mcp.core.plan import PATTERN_ID_RE, RESOURCES, PatternPlan, is_unobserved
 
 INDEX_HEADER_PREFIX = "| 패턴 |"
-INDEX_ID_RE = re.compile(r"^\| \[([a-z0-9][a-z0-9-]*)\]\(patterns/")
+INDEX_ID_RE = re.compile(rf"^\| \[({PATTERN_ID_RE.pattern})\]\(patterns/")
 STATS_RE = re.compile(r"^- 패턴: \d+$", re.MULTILINE)
-INFRA_LINK = "- [클러스터 구성](infra/cluster.md)"
 CONFIDENCE_LEVELS = ("low", "medium", "high")
 NO_RELATED = "없음"
 DEFAULT_UNOBSERVED = "미관측(입력 없음)"
-
-Sections = list[tuple[str, list[str]]]
-
 
 class PageFormatError(ValueError):
     """기존 위키 페이지나 색인이 서버가 기대하는 형식이 아님."""
@@ -93,14 +89,6 @@ def upsert_index_row(
     return STATS_RE.sub(f"- 패턴: {len(index_pattern_ids(text))}", text, count=1)
 
 
-def update_index_infra_line(index_text: str, summary: str, as_of: date) -> str:
-    lines = [
-        f"{INFRA_LINK} — {summary} (기준일 {as_of.isoformat()})" if line.startswith(INFRA_LINK) else line
-        for line in index_text.split("\n")
-    ]
-    return "\n".join(lines)
-
-
 # confidence --------------------------------------------------------
 
 def confidence_for(resource_count: int, occurrences: int) -> str:
@@ -153,19 +141,6 @@ def parse_frontmatter(lines: Sequence[str]) -> dict[str, str]:
 
 def _render_frontmatter(fields: Mapping[str, str]) -> list[str]:
     return ["---", *(f"{key}: {value}" for key, value in fields.items()), "---"]
-
-
-def _split_body(body: Sequence[str]) -> tuple[list[str], Sections]:
-    head: list[str] = []
-    sections: Sections = []
-    for line in body:
-        if line.startswith("## "):
-            sections.append((line[3:].strip(), [line]))
-        elif sections:
-            sections[-1][1].append(line)
-        else:
-            head.append(line)
-    return head, sections
 
 
 def _join_body(head: list[str], sections: Sections) -> list[str]:
@@ -278,7 +253,7 @@ def merge_pattern_update(page_text: str, pattern: PatternPlan, raw_path: str, re
         sources=format_list(sources),
     )
 
-    head, sections = _split_body(body)
+    head, sections = split_sections(body)
     _merge_symptoms(_section(sections, "증상"), pattern.symptoms)
     # 기존 원인·해결은 덮어쓰지 않고, 보고서가 다른 내용을 내면 날짜를 붙여 나란히 둔다.
     for name, text in (("원인", pattern.cause), ("해결방법", pattern.solution)):
@@ -298,7 +273,7 @@ def merge_pattern_update(page_text: str, pattern: PatternPlan, raw_path: str, re
 
 def add_related_link(page_text: str, target_id: str, note: str) -> str:
     frontmatter, body = split_frontmatter(page_text)
-    head, sections = _split_body(body)
+    head, sections = split_sections(body)
     section = _section(sections, "관련 패턴")
     if any(f"]({target_id}.md)" in line for line in section):
         return page_text

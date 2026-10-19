@@ -4,7 +4,7 @@ import pytest
 from conftest import INDEX_MD, LOG_MD, PATTERN_MD
 from plans import create_item, to_plan, update_item
 
-from wiki_mcp.wiki import wiki_pages as wp
+from wiki_mcp.core import wiki_pages as wp
 
 RAW = "raw/2026-10-15/100000.txt"
 RECEIVED = date(2026, 10, 15)
@@ -45,12 +45,6 @@ def test_upsert_errors():
         wp.upsert_index_row("# 빈 색인\n", "x", confidence="low", last_seen=date(2026, 10, 1))
     with pytest.raises(wp.PageFormatError, match="요약"):
         wp.upsert_index_row(INDEX_MD, "new-pattern", confidence="low", last_seen=date(2026, 10, 1))
-
-
-def test_update_index_infra_line():
-    text = wp.update_index_infra_line(INDEX_MD, "Elasticsearch 8.12.2, 108노드", date(2026, 10, 15))
-    assert "- [클러스터 구성](infra/cluster.md) — Elasticsearch 8.12.2, 108노드 (기준일 2026-10-15)" in text
-    assert "샘플 구성" not in text
 
 
 @pytest.mark.parametrize("count, occurrences, expected", [

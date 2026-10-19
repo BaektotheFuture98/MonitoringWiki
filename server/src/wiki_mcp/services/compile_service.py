@@ -1,58 +1,31 @@
 """승인된 보고서를 받아 raw 저장 → 마스킹 → LLM 계획 → 검증 → 위키 적용을 단일 워커로 처리한다."""
 from __future__ import annotations
 
-import json
-import os
 import queue
-import re
 import threading
 import time
 import uuid
-from dataclasses import asdict, dataclass
 from datetime import datetime
-from pathlib import Path
 from typing import Any, Callable
 
-from wiki_mcp.services.access_log import AccessLog
 from wiki_mcp.services.llm import PlanGenerator
+from wiki_mcp.core.errors import JobNotRetryable
 from wiki_mcp.core.masking import Masker
 from wiki_mcp.core.plan import CompilePlan, PlanError, parse_plan
-from wiki_mcp.wiki.raw_store import DUPLICATE_MESSAGE, RawStore
-from wiki_mcp.wiki.wiki_pages import index_pattern_ids
-from wiki_mcp.wiki.wiki_reader import INDEX_PATH
-from wiki_mcp.wiki.wiki_store import WikiStore
-from wiki_mcp.wiki.wiki_writer import WikiWriter
+from wiki_mcp.repositories.job_store import Job, JobStore
+from wiki_mcp.repositories.raw_store import DUPLICATE_MESSAGE, RawStore
+from wiki_mcp.repositories.store import WikiStore
+from wiki_mcp.services import wiki_query
+from wiki_mcp.core.wiki_pages import index_pattern_ids
+from wiki_mcp.services.wiki_writer import WikiWriter
 
 PLAN_ATTEMPTS = 2
-JOB_ID_RE = re.compile(r"[0-9a-f]{12}")
-UNFINISHED_STATUSES = ("queued", "running")
 RESTART_ERROR = "서버가 재시작되어 작업이 중단되었습니다. retry로 다시 처리하세요."
 STOP_TIMEOUT_SECONDS = 5.0
 
 
-class JobNotFound(LookupError):
-    """작업 ID에 해당하는 기록이 없음."""
-
-
-class JobNotRetryable(ValueError):
-    """실패하지 않은 작업은 다시 시도할 수 없음."""
-
-
 class CompileTimeout(TimeoutError):
     """작업 전체 제한 시간을 넘음."""
-
-
-@dataclass
-class Job:
-    id: str
-    raw_path: str
-    token: str
-    status: str
-    created_at: str
-    updated_at: str
-    attempts: int = 0
-    result: dict[str, Any] | None = None
-    error: str | None = None
 
 
 def job_view(job: Job) -> dict[str, Any]:
@@ -62,33 +35,6 @@ def job_view(job: Job) -> dict[str, Any]:
     if job.error is not None:
         view["error"] = job.error
     return view
-
-
-class JobStore:
-    """작업 기록을 <상태 폴더>/jobs/<작업ID>.json에 둔다(PoC는 영속 큐 없이 기록만 남긴다)."""
-
-    def __init__(self, directory: Path) -> None:
-        self.directory = directory
-        directory.mkdir(parents=True, exist_ok=True)
-
-    def save(self, job: Job) -> None:
-        target = self.directory / f"{job.id}.json"
-        tmp = target.with_name(f".{target.name}.{uuid.uuid4().hex}.tmp")
-        tmp.write_text(json.dumps(asdict(job), ensure_ascii=False, indent=2), encoding="utf-8")
-        os.replace(tmp, target)
-
-    def load(self, job_id: str) -> Job:
-        if not JOB_ID_RE.fullmatch(job_id):
-            raise JobNotFound(f"작업이 없습니다: {job_id!r}")
-        try:
-            data = json.loads((self.directory / f"{job_id}.json").read_text(encoding="utf-8"))
-        except FileNotFoundError as exc:
-            raise JobNotFound(f"작업이 없습니다: {job_id}") from exc
-        return Job(**data)
-
-    def unfinished(self) -> list[Job]:
-        jobs = [Job(**json.loads(path.read_text(encoding="utf-8"))) for path in sorted(self.directory.glob("*.json"))]
-        return [job for job in jobs if job.status in UNFINISHED_STATUSES]
 
 
 class CompileService:
@@ -101,7 +47,6 @@ class CompileService:
         generator: PlanGenerator,
         masker: Masker,
         jobs: JobStore,
-        log: AccessLog,
         timeout: float,
         now: Callable[[], datetime],
         clock: Callable[[], float] = time.monotonic,
@@ -112,7 +57,6 @@ class CompileService:
         self.generator = generator
         self.masker = masker
         self.jobs = jobs
-        self.log = log
         self.timeout = timeout
         self._now = now
         self._clock = clock
@@ -208,15 +152,13 @@ class CompileService:
             self.jobs.save(job)
             del self._active[job.id]
             done = self._done.pop(job.id)
-        self.log.write(token=job.token, tool="compile", args={"job_id": job.id, "raw_path": job.raw_path},
-                       status=status)
         done.set()
 
     def _compile(self, job: Job) -> dict[str, Any]:
         deadline = self._clock() + self.timeout
-        text = (self.raw_store.root / job.raw_path).read_text(encoding="utf-8")
+        text = self.raw_store.read(job.raw_path)
         masked = self.masker.mask(text)
-        index_text = self.wiki.read(INDEX_PATH)
+        index_text = wiki_query.read_index(self.wiki)
         plan = self._plan(masked, index_text, deadline)
         self._check_deadline(deadline)
         applied = self.writer.apply_plan(plan, raw_path=job.raw_path, job_id=job.id)

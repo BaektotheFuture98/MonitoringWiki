@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import date
-from typing import Any, Mapping
+from typing import Any, Iterable, Mapping
 
 from wiki_mcp.core.masking import Masker
 
@@ -236,16 +236,21 @@ def _check_written_text(pattern: PatternPlan, masker: Masker, where: str) -> Non
             raise PlanError(f"{where}에 raw 경로를 쓸 수 없습니다(sources는 서버가 계산).")
 
 
+def check_pattern_actions(patterns: Iterable[PatternPlan], existing_ids: set[str]) -> None:
+    for pattern in patterns:
+        if pattern.action == "create" and pattern.id in existing_ids:
+            raise PlanError(f"이미 색인에 있는 id로 create할 수 없습니다: {pattern.id}")
+        if pattern.action == "update" and pattern.id not in existing_ids:
+            raise PlanError(f"색인에 없는 id는 update할 수 없습니다: {pattern.id}")
+
+
 def _check_ids(patterns: tuple[PatternPlan, ...], existing_ids: set[str]) -> None:
     seen: set[str] = set()
     for pattern in patterns:
         if pattern.id in seen:
             raise PlanError(f"같은 id가 계획에 두 번 있습니다: {pattern.id}")
         seen.add(pattern.id)
-        if pattern.action == "create" and pattern.id in existing_ids:
-            raise PlanError(f"이미 색인에 있는 id로 create할 수 없습니다: {pattern.id}")
-        if pattern.action == "update" and pattern.id not in existing_ids:
-            raise PlanError(f"색인에 없는 id는 update할 수 없습니다: {pattern.id}")
+        check_pattern_actions((pattern,), existing_ids)
     created = {pattern.id for pattern in patterns if pattern.action == "create"}
     for pattern in patterns:
         for ref in pattern.related:

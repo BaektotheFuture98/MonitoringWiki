@@ -23,7 +23,6 @@ class Settings:
     wiki_root: Path
     tz: str
     tokens_file: Path | None
-    access_log: Path
     max_report_bytes: int
     host: str
     port: int
@@ -98,7 +97,6 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         wiki_root=Path(_required(env, "WIKI_ROOT")),
         tz=_optional(env, "WIKI_TZ", "Asia/Seoul"),
         tokens_file=_optional_path(env, "WIKI_TOKENS_FILE") if auth_disabled else Path(_required(env, "WIKI_TOKENS_FILE")),
-        access_log=Path(_required(env, "WIKI_ACCESS_LOG")),
         max_report_bytes=_positive_int(env, "WIKI_MAX_REPORT_BYTES", 1_048_576),
         host=_optional(env, "WIKI_HOST", "127.0.0.1"),
         port=_positive_int(env, "WIKI_PORT", 8000),

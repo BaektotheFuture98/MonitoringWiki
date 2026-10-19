@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from wiki_mcp.instructions import InstructionsError, extract_guide, extract_section, load_instructions
+from wiki_mcp.services.instructions import InstructionsError, extract_guide, extract_section, load_instructions
 
 
 def test_load_from_store(wiki_store):

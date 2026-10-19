@@ -6,7 +6,7 @@ import pytest
 
 from wiki_mcp.core.auth import hash_token
 from wiki_mcp.core.config import Settings
-from wiki_mcp.wiki.wiki_store import FileWikiStore
+from wiki_mcp.repositories.store import FileWikiStore
 
 AGENTS_MD = """# 규칙
 
@@ -87,7 +87,6 @@ def make_settings(root: Path, tmp_path: Path, **overrides) -> Settings:
         "wiki_root": root,
         "tz": "Asia/Seoul",
         "tokens_file": tmp_path / "tokens.json",
-        "access_log": tmp_path / "access.jsonl",
         "max_report_bytes": 10_000,
         "host": "127.0.0.1",
         "port": 8000,

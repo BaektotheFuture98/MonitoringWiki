@@ -6,38 +6,33 @@ from typing import Any, Awaitable, Callable
 from fastapi import APIRouter, FastAPI, Header, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 from wiki_mcp.core.auth import AuthError, ScopeError
-from wiki_mcp.services.compile_service import JobNotFound, JobNotRetryable
+from wiki_mcp.core.errors import (
+    JobNotFound,
+    JobNotRetryable,
+    ReportRejected,
+    ReportTooLarge,
+    WikiReadError,
+)
+from wiki_mcp.core.ratelimit import RateLimited
 from wiki_mcp.services.handlers import (
     Services,
-    handle_get_guide,
-    handle_get_index,
     handle_get_infra,
     handle_get_job,
-    handle_get_pattern,
     handle_retry_job,
     handle_submit_report,
-    handle_update_infra,
 )
-from wiki_mcp.services.infra import InfraError, InfraSpec, Tier
-from wiki_mcp.core.ratelimit import RateLimited
-from wiki_mcp.wiki.raw_store import ReportRejected, ReportTooLarge
-from wiki_mcp.wiki.wiki_reader import InvalidRequest, PatternNotFound, WikiReadError
 
 SUBMIT_STATUS_CODES = {"compiled": 200, "duplicate": 200, "queued": 202, "running": 202, "failed": 502}
-# 처리기는 예외 계층의 가장 가까운 등록 항목을 쓰므로(PatternNotFound는 WikiReadError보다 우선) 순서는 상관없다.
 ERROR_RESPONSES: tuple[tuple[type[Exception], int, str], ...] = (
     (AuthError, 401, "unauthenticated"),
     (ScopeError, 403, "forbidden"),
-    (PatternNotFound, 404, "not_found"),
     (JobNotFound, 404, "not_found"),
     (JobNotRetryable, 409, "not_retryable"),
     (ReportTooLarge, 413, "too_large"),
     (ReportRejected, 422, "invalid_report"),
-    (InvalidRequest, 422, "invalid_request"),
-    (InfraError, 422, "invalid_infra"),
     (RateLimited, 429, "rate_limited"),
     (WikiReadError, 503, "wiki_unavailable"),
 )
@@ -48,49 +43,9 @@ class ReportIn(BaseModel):
     text: str
 
 
-class NodesIn(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    master: int = Field(ge=0)
-    client: int = Field(ge=0)
-    data: int = Field(ge=0)
-
-
-class TierIn(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    name: str
-    data_nodes: int = Field(ge=0)
-    racks: list[str] = Field(default_factory=list)
-
-
-class InfraIn(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    version: str
-    nodes: NodesIn
-    tiers: list[TierIn] = Field(default_factory=list)
-    notes: list[str] = Field(default_factory=list)
-    unconfirmed: list[str] = Field(default_factory=list)
-
-    def to_spec(self) -> InfraSpec:
-        return InfraSpec(
-            version=self.version,
-            master=self.nodes.master,
-            client=self.nodes.client,
-            data=self.nodes.data,
-            tiers=tuple(Tier(tier.name, tier.data_nodes, tuple(tier.racks)) for tier in self.tiers),
-            notes=tuple(self.notes),
-            unconfirmed=tuple(self.unconfirmed),
-        )
-
-
 def _submit_response(view: dict[str, Any]) -> JSONResponse:
     body = {**view, "code": "compile_failed"} if view["status"] == "failed" else view
     return JSONResponse(body, status_code=SUBMIT_STATUS_CODES[view["status"]])
-
-
-def _sections(value: str | None) -> list[str] | None:
-    if not value:
-        return None
-    return [part.strip() for part in value.split(",") if part.strip()] or None
 
 
 def create_api_router(svc: Services) -> APIRouter:
@@ -98,25 +53,9 @@ def create_api_router(svc: Services) -> APIRouter:
     router = APIRouter(prefix="/api")
     wait = float(svc.settings.compile_wait_seconds)
 
-    @router.get("/index")
-    def get_index(authorization: str | None = Header(default=None)) -> dict[str, str]:
-        return {"text": handle_get_index(svc, authorization)}
-
-    @router.get("/patterns/{pattern_id}")
-    def get_pattern(
-        pattern_id: str,
-        sections: str | None = None,
-        authorization: str | None = Header(default=None),
-    ) -> dict[str, str]:
-        return {"text": handle_get_pattern(svc, authorization, pattern_id, _sections(sections))}
-
     @router.get("/infra")
     def get_infra(authorization: str | None = Header(default=None)) -> dict[str, str]:
         return {"text": handle_get_infra(svc, authorization)}
-
-    @router.get("/guide")
-    def get_guide(authorization: str | None = Header(default=None)) -> dict[str, str]:
-        return {"text": handle_get_guide(svc, authorization)}
 
     @router.post("/reports")
     def submit_report(body: ReportIn, authorization: str | None = Header(default=None)) -> JSONResponse:
@@ -129,10 +68,6 @@ def create_api_router(svc: Services) -> APIRouter:
     @router.post("/reports/{job_id}/retry")
     def retry_job(job_id: str, authorization: str | None = Header(default=None)) -> JSONResponse:
         return _submit_response(handle_retry_job(svc, authorization, job_id, wait=wait))
-
-    @router.put("/infra")
-    def update_infra(body: InfraIn, authorization: str | None = Header(default=None)) -> dict[str, str]:
-        return handle_update_infra(svc, authorization, body.to_spec())
 
     return router
 

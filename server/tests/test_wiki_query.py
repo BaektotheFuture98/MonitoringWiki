@@ -1,6 +1,7 @@
 import pytest
 
-from wiki_mcp.wiki import wiki_reader as wr
+from wiki_mcp.core.errors import InvalidRequest, PatternNotFound, WikiReadError
+from wiki_mcp.services import wiki_query as wr
 
 
 def test_check_wiki_ok(wiki_store):
@@ -9,7 +10,7 @@ def test_check_wiki_ok(wiki_store):
 
 def test_check_wiki_missing_index(wiki_root, wiki_store):
     (wiki_root / "wiki" / "index.md").unlink()
-    with pytest.raises(wr.WikiReadError, match="wiki/index.md"):
+    with pytest.raises(WikiReadError, match="wiki/index.md"):
         wr.check_wiki(wiki_store)
 
 
@@ -40,26 +41,17 @@ def test_read_pattern_selected_sections(wiki_store):
     assert "# 샘플 패턴" in text
 
 
-def test_drop_field_multiline_list():
-    frontmatter = ["id: x", "sources:", "  - raw/a.txt", "  - raw/b.txt", "summary: s"]
-    assert wr.drop_field(frontmatter, "sources") == ["id: x", "summary: s"]
-
-
 @pytest.mark.parametrize("bad", ["../CLAUDE", "-x", "Sample", "a/b", "", "abc\n"])
 def test_read_pattern_rejects_bad_id(wiki_store, bad):
-    with pytest.raises(wr.InvalidRequest):
+    with pytest.raises(InvalidRequest):
         wr.read_pattern(wiki_store, bad)
 
 
 def test_read_pattern_rejects_unknown_section(wiki_store):
-    with pytest.raises(wr.InvalidRequest):
+    with pytest.raises(InvalidRequest):
         wr.read_pattern(wiki_store, "sample-pattern", ["원인", "근거 한계"])
 
 
 def test_read_pattern_missing(wiki_store):
-    with pytest.raises(wr.PatternNotFound, match="get_index"):
+    with pytest.raises(PatternNotFound, match="get_index"):
         wr.read_pattern(wiki_store, "no-such-pattern")
-
-
-def test_pattern_path():
-    assert wr.pattern_path("a-b") == "wiki/patterns/a-b.md"

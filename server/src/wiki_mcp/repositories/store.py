@@ -9,6 +9,14 @@ from pathlib import Path, PurePosixPath
 from typing import Any, ContextManager, Protocol
 
 WRITABLE_PREFIX = "wiki/"
+INDEX_PATH = "wiki/index.md"
+INFRA_PATH = "wiki/infra/cluster.md"
+LOG_PATH = "wiki/log.md"
+PATTERNS_DIR = "wiki/patterns"
+
+
+def pattern_path(pattern_id: str) -> str:
+    return f"{PATTERNS_DIR}/{pattern_id}.md"
 
 
 class WikiPathError(ValueError):

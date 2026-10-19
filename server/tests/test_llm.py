@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from wiki_mcp.instructions import InstructionsError
+from wiki_mcp.services.instructions import InstructionsError
 from wiki_mcp.core.plan import RESOURCES
 from wiki_mcp.services.llm import (
     PLAN_SCHEMA,

@@ -5,8 +5,8 @@ import pytest
 from plans import create_item, to_plan, update_item
 
 from wiki_mcp.core.plan import PlanError
-from wiki_mcp.wiki.wiki_store import FileWikiStore
-from wiki_mcp.wiki.wiki_writer import WikiWriter
+from wiki_mcp.repositories.store import FileWikiStore
+from wiki_mcp.services.wiki_writer import WikiWriter
 
 NOW = datetime(2026, 10, 15, 9, 30, tzinfo=ZoneInfo("Asia/Seoul"))
 RAW = "raw/2026-10-15/093000.txt"
@@ -86,7 +86,7 @@ def test_stale_action_rejected_before_any_write(store, writer):
     plan = to_plan(create_item())
     writer.apply_plan(plan, raw_path=RAW, job_id="j1")
     store.events.clear()
-    with pytest.raises(PlanError, match="이미 있는"):
+    with pytest.raises(PlanError, match="이미 색인에 있는"):
         writer.apply_plan(plan, raw_path=RAW, job_id="j2")
     assert store.events == []
 
@@ -101,21 +101,6 @@ def test_snapshots_pruned_to_keep(store, tmp_path):
 
 
 def test_same_label_in_same_second_gets_suffix(writer):
-    first = writer.write_infra("a\n", summary="s", as_of=NOW.date(), source="API(t)")
-    second = writer.write_infra("b\n", summary="s", as_of=NOW.date(), source="API(t)")
-    assert (first, second) == ("20261015-093000-infra", "20261015-093000-infra-2")
-
-
-def test_write_infra_updates_page_index_and_log(store, writer):
-    snapshot = writer.write_infra("---\nid: infra-cluster\n---\n# 새 구성\n",
-                                  summary="Elasticsearch 9.0.0, 10노드", as_of=NOW.date(), source="API(web-backend)")
-    assert store.read("wiki/infra/cluster.md") == "---\nid: infra-cluster\n---\n# 새 구성\n"
-    assert "— Elasticsearch 9.0.0, 10노드 (기준일 2026-10-15)" in store.read("wiki/index.md")
-    assert ("infra | 클러스터 구성 갱신\n- API(web-backend) 입력으로 `wiki/infra/cluster.md`를 덮어썼습니다"
-            in store.read("wiki/log.md"))
-    assert store.events == [
-        ("snapshot", snapshot),
-        ("write", "wiki/infra/cluster.md"),
-        ("write", "wiki/index.md"),
-        ("write", "wiki/log.md"),
-    ]
+    first = writer.apply_plan(to_plan(create_item(id="p1")), raw_path=RAW, job_id="j").snapshot
+    second = writer.apply_plan(to_plan(create_item(id="p2")), raw_path=RAW, job_id="j").snapshot
+    assert (first, second) == ("20261015-093000-j", "20261015-093000-j-2")

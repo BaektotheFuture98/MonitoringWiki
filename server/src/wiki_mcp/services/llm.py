@@ -7,7 +7,7 @@ from typing import Any, Protocol
 from google import genai
 from google.genai import types
 
-from wiki_mcp.instructions import extract_section
+from wiki_mcp.services.instructions import extract_section
 from wiki_mcp.core.plan import RESOURCES
 
 RULE_SECTIONS = ("지식 종류 구분과 처리", "Ingest (승인된 보고서 컴파일)", "시그니처 정규화", "개인정보", "패턴 페이지 형식")

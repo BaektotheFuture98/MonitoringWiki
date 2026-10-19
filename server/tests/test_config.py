@@ -8,7 +8,6 @@ from wiki_mcp.core.config import ConfigError, load_env_file, load_settings
 BASE = {
     "WIKI_ROOT": "/repo",
     "WIKI_TOKENS_FILE": "/etc/wiki/tokens.json",
-    "WIKI_ACCESS_LOG": "/var/log/wiki/access.jsonl",
     "GEMINI_API_KEY": "sk-test-secret",
     "WIKI_LLM_MODEL": "gemini-test",
 }
@@ -18,7 +17,6 @@ def test_defaults():
     s = load_settings(BASE)
     assert s.wiki_root == Path("/repo")
     assert s.tokens_file == Path("/etc/wiki/tokens.json")
-    assert s.access_log == Path("/var/log/wiki/access.jsonl")
     assert s.tz == "Asia/Seoul"
     assert s.max_report_bytes == 1_048_576
     assert (s.host, s.port) == ("127.0.0.1", 8000)
@@ -53,7 +51,7 @@ def test_overrides():
 
 
 @pytest.mark.parametrize(
-    "missing", ["WIKI_ROOT", "WIKI_TOKENS_FILE", "WIKI_ACCESS_LOG", "GEMINI_API_KEY", "WIKI_LLM_MODEL"]
+    "missing", ["WIKI_ROOT", "WIKI_TOKENS_FILE", "GEMINI_API_KEY", "WIKI_LLM_MODEL"]
 )
 def test_missing_required(missing):
     env = {k: v for k, v in BASE.items() if k != missing}

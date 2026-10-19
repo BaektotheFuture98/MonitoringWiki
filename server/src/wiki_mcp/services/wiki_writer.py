@@ -11,21 +11,17 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Callable, Sequence
 
-from wiki_mcp.core.plan import CompilePlan, PlanError
-from wiki_mcp.wiki.wiki_pages import (
+from wiki_mcp.core.plan import CompilePlan, check_pattern_actions
+from wiki_mcp.core.wiki_pages import (
     add_related_link,
     append_log,
     confidence_for,
     index_pattern_ids,
     merge_pattern_update,
     render_new_pattern,
-    update_index_infra_line,
     upsert_index_row,
 )
-from wiki_mcp.wiki.wiki_reader import INDEX_PATH, INFRA_PATH, LOG_PATH, pattern_path
-from wiki_mcp.wiki.wiki_store import WikiStore
-
-INFRA_SNAPSHOT_LABEL = "infra"
+from wiki_mcp.repositories.store import INDEX_PATH, LOG_PATH, WikiStore, pattern_path
 
 
 @dataclass(frozen=True)
@@ -46,7 +42,8 @@ class WikiWriter:
         with self.store.write_lock():
             now = self._now()
             index = self.store.read(INDEX_PATH)
-            _check_actions(plan, index_pattern_ids(index))
+            # 계획을 만든 뒤 색인이 바뀌었을 수 있으므로 쓰기 직전에 다시 확인한다.
+            check_pattern_actions(plan.patterns, index_pattern_ids(index))
             pages: dict[str, str] = {}
             for pattern in plan.patterns:
                 path = pattern_path(pattern.id)
@@ -83,20 +80,6 @@ class WikiWriter:
             self.store.write_atomic(LOG_PATH, log)
         return ApplyResult(created, updated, snapshot)
 
-    def write_infra(self, text: str, *, summary: str, as_of: date, source: str) -> str:
-        with self.store.write_lock():
-            now = self._now()
-            index = update_index_infra_line(self.store.read(INDEX_PATH), summary, as_of)
-            log = append_log(
-                self.store.read(LOG_PATH), when=now, kind="infra", target="클러스터 구성 갱신",
-                lines=[f"{source} 입력으로 `{INFRA_PATH}`를 덮어썼습니다(기준일 {as_of.isoformat()})."],
-            )
-            snapshot = self._snapshot(now, INFRA_SNAPSHOT_LABEL)
-            self.store.write_atomic(INFRA_PATH, text)
-            self.store.write_atomic(INDEX_PATH, index)
-            self.store.write_atomic(LOG_PATH, log)
-        return snapshot
-
     def _snapshot(self, now: datetime, label: str) -> str:
         base = f"{now:%Y%m%d-%H%M%S}-{label}"
         name, attempt = base, 2
@@ -111,15 +94,6 @@ class WikiWriter:
         snapshots = sorted(path for path in self.snapshot_dir.iterdir() if path.is_dir())
         for old in snapshots[:-self.keep]:
             shutil.rmtree(old)
-
-
-def _check_actions(plan: CompilePlan, existing_ids: set[str]) -> None:
-    """계획을 만든 뒤 색인이 바뀌었을 수 있으므로 쓰기 직전에 다시 확인한다."""
-    for pattern in plan.patterns:
-        if pattern.action == "create" and pattern.id in existing_ids:
-            raise PlanError(f"이미 있는 패턴입니다: {pattern.id}")
-        if pattern.action == "update" and pattern.id not in existing_ids:
-            raise PlanError(f"색인에 없는 패턴입니다: {pattern.id}")
 
 
 def _ingest_lines(job_id: str, created: Sequence[str], updated: Sequence[str], candidates: int) -> list[str]:

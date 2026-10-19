@@ -1,6 +1,6 @@
 """담당자용: 아직 위키에 반영되지 않은 raw 파일 목록을 출력한다(자동 컴파일이 실패한 보고서 확인용).
 
-사용법: WIKI_ROOT=<저장소> python -m wiki_mcp.services.pending
+사용법: WIKI_ROOT=<저장소> python scripts/pending.py
 """
 from __future__ import annotations
 
@@ -9,9 +9,11 @@ import re
 import sys
 from pathlib import Path
 
-from wiki_mcp.wiki import wiki_reader
-from wiki_mcp.wiki.raw_store import IGNORED_NAMES
-from wiki_mcp.wiki.wiki_store import FileWikiStore, WikiStore
+from wiki_mcp.core.errors import WikiReadError
+from wiki_mcp.core.markdown import split_frontmatter
+from wiki_mcp.services import wiki_query
+from wiki_mcp.repositories.raw_store import IGNORED_NAMES
+from wiki_mcp.repositories.store import LOG_PATH, PATTERNS_DIR, FileWikiStore, WikiStore
 
 RAW_PATH_RE = re.compile(r"raw/\d{4}-\d{2}-\d{2}/[^\s`'\"\],)]+")
 INGEST_HEADING_RE = re.compile(r"^## \[[^\]]*\] ingest\b")
@@ -44,13 +46,13 @@ def _ingest_entries(log_text: str) -> str:
 
 def referenced_raw_paths(store: WikiStore) -> set[str]:
     referenced: set[str] = set()
-    for path in store.list(wiki_reader.PATTERNS_DIR):
+    for path in store.list(PATTERNS_DIR):
         if not path.endswith(".md"):
             continue
-        frontmatter, _ = wiki_reader.split_frontmatter(store.read(path))
+        frontmatter, _ = split_frontmatter(store.read(path))
         referenced.update(RAW_PATH_RE.findall(_sources_text(frontmatter)))
     try:
-        log_text = store.read(wiki_reader.LOG_PATH)
+        log_text = store.read(LOG_PATH)
     except FileNotFoundError:
         log_text = ""
     referenced.update(RAW_PATH_RE.findall(_ingest_entries(log_text)))
@@ -78,8 +80,8 @@ def main() -> int:
     root = Path(root_value)
     store = FileWikiStore(root)
     try:
-        wiki_reader.check_wiki(store)
-    except wiki_reader.WikiReadError as exc:
+        wiki_query.check_wiki(store)
+    except WikiReadError as exc:
         print(str(exc), file=sys.stderr)
         return 1
     pending = pending_raw_files(root, store)

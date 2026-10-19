@@ -2,7 +2,7 @@ import threading
 
 import pytest
 
-from wiki_mcp.wiki.wiki_store import FileWikiStore, WikiPathError
+from wiki_mcp.repositories.store import FileWikiStore, WikiPathError, pattern_path
 
 
 @pytest.fixture
@@ -68,3 +68,7 @@ def test_write_lock_is_exclusive(store):
         assert not entered.wait(0.1)
     assert entered.wait(1)
     thread.join()
+
+
+def test_pattern_path():
+    assert pattern_path("a-b") == "wiki/patterns/a-b.md"

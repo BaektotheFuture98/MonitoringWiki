@@ -12,22 +12,23 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-from wiki_mcp.wiki import wiki_reader
-from wiki_mcp.services.access_log import AccessLog
-from wiki_mcp.api.rest import create_api_router, install_error_handlers
+from wiki_mcp.services import wiki_query
+from wiki_mcp.routers.rest import create_api_router, install_error_handlers
 from wiki_mcp.core.auth import TokenStore
-from wiki_mcp.services.compile_service import CompileService, JobStore
+from wiki_mcp.repositories.job_store import JobStore
+from wiki_mcp.services.compile_service import CompileService
+from wiki_mcp.core.errors import WikiReadError
 from wiki_mcp.core.config import ConfigError, Settings, load_env_file, load_settings
 from wiki_mcp.services.handlers import Services
-from wiki_mcp.instructions import load_instructions, read_agents_md
+from wiki_mcp.services.instructions import load_instructions, read_agents_md
 from wiki_mcp.services.llm import GeminiPlanGenerator, PlanGenerator, build_system_prompt
 from wiki_mcp.core.masking import Masker, load_names
-from wiki_mcp.api.mcp_adapter import create_mcp
-from wiki_mcp.api.middleware import BearerAuthMiddleware
+from wiki_mcp.routers.mcp_adapter import create_mcp
+from wiki_mcp.routers.middleware import BearerAuthMiddleware
 from wiki_mcp.core.ratelimit import RateLimiter
-from wiki_mcp.wiki.raw_store import RawStore
-from wiki_mcp.wiki.wiki_store import FileWikiStore, WikiStore
-from wiki_mcp.wiki.wiki_writer import WikiWriter
+from wiki_mcp.repositories.raw_store import RawStore
+from wiki_mcp.repositories.store import FileWikiStore, WikiStore
+from wiki_mcp.services.wiki_writer import WikiWriter
 
 SUBMIT_LIMIT_PER_MINUTE = 10
 HEALTH_PATH = "/healthz"
@@ -54,7 +55,6 @@ def build_services(
     tz = ZoneInfo(settings.tz)
     now = now or (lambda: datetime.now(tz))
     wiki = FileWikiStore(settings.wiki_root)
-    log = AccessLog(settings.access_log)
     writer = WikiWriter(wiki, settings.state_root / "snapshots", settings.snapshot_keep, now)
     compiler = CompileService(
         raw_store=RawStore(settings.wiki_root, settings.tz, settings.max_report_bytes, now=now),
@@ -63,7 +63,6 @@ def build_services(
         generator=generator or _gemini_generator(settings, wiki),
         masker=Masker(load_names(settings.mask_names_file)),
         jobs=JobStore(settings.state_root / "jobs"),
-        log=log,
         timeout=float(settings.compile_timeout),
         now=now,
     )
@@ -72,10 +71,7 @@ def build_services(
         tokens=TokenStore.open() if settings.auth_disabled else TokenStore.load(settings.tokens_file),
         wiki=wiki,
         compiler=compiler,
-        writer=writer,
         limiter=RateLimiter(SUBMIT_LIMIT_PER_MINUTE, 60.0),
-        log=log,
-        now=now,
     )
 
 
@@ -86,7 +82,7 @@ def create_app(
     now: Callable[[], datetime] | None = None,
 ) -> FastAPI:
     svc = build_services(settings, generator=generator, now=now)
-    wiki_reader.check_wiki(svc.wiki)
+    wiki_query.check_wiki(svc.wiki)
     mcp = create_mcp(svc, load_instructions(svc.wiki))
     mcp_app = mcp.streamable_http_app()  # session_manager는 이 호출 뒤에 생긴다
 
@@ -113,8 +109,8 @@ def create_app(
     @app.get(HEALTH_PATH, include_in_schema=False)
     def healthz() -> JSONResponse:
         try:
-            wiki_reader.check_wiki(svc.wiki)
-        except wiki_reader.WikiReadError as exc:
+            wiki_query.check_wiki(svc.wiki)
+        except WikiReadError as exc:
             return JSONResponse({"status": "error", "detail": str(exc)}, status_code=503)
         return JSONResponse({"status": "ok"})
 

@@ -4,11 +4,11 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from wiki_mcp.wiki.raw_store import (
+from wiki_mcp.core.errors import ReportRejected
+from wiki_mcp.repositories.raw_store import (
     DUPLICATE_MESSAGE,
     PENDING_MESSAGE,
     RawStore,
-    ReportRejected,
     content_hash,
 )
 
