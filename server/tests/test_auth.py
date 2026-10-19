@@ -43,6 +43,11 @@ def test_load_rejects_unknown_scope(tmp_path):
         TokenStore.load(path)
 
 
+def test_load_accepts_reserved_infra_scope(tmp_path):
+    path = write_tokens(tmp_path / "t.json", [{"name": "x", "sha256": hash_token("t"), "scopes": ["infra"]}])
+    assert TokenStore.load(path).authenticate("Bearer t").scopes == frozenset({"infra"})
+
+
 def test_load_rejects_bad_hash(tmp_path):
     path = write_tokens(tmp_path / "t.json", [{"name": "x", "sha256": "abc", "scopes": ["read"]}])
     with pytest.raises(ValueError, match="sha256"):

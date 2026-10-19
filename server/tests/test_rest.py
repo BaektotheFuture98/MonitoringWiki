@@ -110,3 +110,8 @@ def test_submit_rate_limited(client):
     response = client.post("/api/reports", json={"text": "보고서 10"}, headers=SUBMIT)
     assert (response.status_code, response.json()["code"]) == (429, "rate_limited")
 
+
+def test_infra_missing_page_is_503(client, server_settings):
+    (server_settings.wiki_root / "wiki" / "infra" / "cluster.md").unlink()
+    response = client.get("/api/infra", headers=READ)
+    assert (response.status_code, response.json()["code"]) == (503, "wiki_unavailable")

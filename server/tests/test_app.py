@@ -1,4 +1,5 @@
 import asyncio
+import json
 import shutil
 from dataclasses import replace
 from pathlib import Path
@@ -101,3 +102,37 @@ def test_authorization_header_from_request():
 def test_authorization_without_request():
     ctx = SimpleNamespace(request_context=SimpleNamespace(request=None))
     assert _authorization(ctx) is None
+
+
+MCP_HEADERS = {"Accept": "application/json, text/event-stream"}
+
+
+def mcp_call(client, token, name, arguments):
+    headers = {"Authorization": f"Bearer {token}", **MCP_HEADERS}
+    session = {"mcp-session-id": client.post("/mcp", json=INITIALIZE, headers=headers).headers["mcp-session-id"]}
+    client.post("/mcp", json={"jsonrpc": "2.0", "method": "notifications/initialized"}, headers={**headers, **session})
+    body = {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": name, "arguments": arguments}}
+    response = client.post("/mcp", json=body, headers={**headers, **session})
+    payloads = [line[5:].strip() for line in response.text.splitlines() if line.startswith("data:")]
+    return json.loads(payloads[-1])["result"]
+
+
+def test_mcp_tool_returns_wiki_text(server_settings):
+    with TestClient(make_app(server_settings), base_url="http://127.0.0.1:8000") as client:
+        result = mcp_call(client, "read-secret", "get_index", {})
+    assert not result.get("isError")
+    assert "[sample-pattern]" in result["content"][0]["text"]
+
+
+def test_mcp_tool_without_scope_is_error(server_settings):
+    with TestClient(make_app(server_settings), base_url="http://127.0.0.1:8000") as client:
+        result = mcp_call(client, "submit-secret", "get_index", {})
+    assert result["isError"] is True
+    assert "read" in result["content"][0]["text"]
+
+
+def test_mcp_get_pattern_rejects_bad_id(server_settings):
+    with TestClient(make_app(server_settings), base_url="http://127.0.0.1:8000") as client:
+        result = mcp_call(client, "read-secret", "get_pattern", {"id": "Bad_ID"})
+    assert result["isError"] is True
+    assert "형식" in result["content"][0]["text"]
