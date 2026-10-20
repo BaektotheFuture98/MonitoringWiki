@@ -6,7 +6,7 @@ from plans import create_item, to_plan, update_item
 
 from wiki_mcp.core.plan import PlanError
 from wiki_mcp.repositories.store import FileWikiStore
-from wiki_mcp.services.wiki_writer import WikiWriter
+from wiki_mcp.services.wiki_service import WikiWriter
 
 NOW = datetime(2026, 10, 15, 9, 30, tzinfo=ZoneInfo("Asia/Seoul"))
 RAW = "raw/2026-10-15/093000.txt"

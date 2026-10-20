@@ -1,7 +1,7 @@
 import pytest
 
 from wiki_mcp.core.errors import InvalidRequest, PatternNotFound, WikiReadError
-from wiki_mcp.services import wiki_query as wr
+from wiki_mcp.services import wiki_service as wr
 
 
 def test_check_wiki_ok(wiki_store):

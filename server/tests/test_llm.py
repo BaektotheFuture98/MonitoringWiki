@@ -4,7 +4,6 @@ from types import SimpleNamespace
 
 import pytest
 
-from wiki_mcp.services.instructions import InstructionsError
 from wiki_mcp.core.plan import RESOURCES
 from wiki_mcp.services.llm import (
     PLAN_SCHEMA,
@@ -15,7 +14,13 @@ from wiki_mcp.services.llm import (
     build_user_message,
 )
 
-REAL_AGENTS_MD = Path(__file__).resolve().parents[2] / "AGENTS.md"
+_REPO = Path(__file__).resolve().parents[2]
+REAL_AGENTS_MD = _REPO / "AGENTS.md"
+_COMBINED_MD = (
+    REAL_AGENTS_MD.read_text(encoding="utf-8")
+    + "\n\n"
+    + (_REPO / "docs" / "wiki-spec.md").read_text(encoding="utf-8")
+)
 
 
 class FakeModels:
@@ -45,7 +50,7 @@ def generator(client):
 
 
 def test_system_prompt_includes_rule_sections():
-    prompt = build_system_prompt(REAL_AGENTS_MD.read_text(encoding="utf-8"))
+    prompt = build_system_prompt(_COMBINED_MD)
     for name in RULE_SECTIONS:
         assert f"## {name}" in prompt
     assert "JSON 스키마" in prompt
@@ -53,7 +58,7 @@ def test_system_prompt_includes_rule_sections():
 
 
 def test_system_prompt_requires_sections():
-    with pytest.raises(InstructionsError):
+    with pytest.raises(ValueError):
         build_system_prompt("# 규칙\n\n## Ingest\n내용\n")
 
 

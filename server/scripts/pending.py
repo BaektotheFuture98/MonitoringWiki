@@ -11,7 +11,7 @@ from pathlib import Path
 
 from wiki_mcp.core.errors import WikiReadError
 from wiki_mcp.core.markdown import split_frontmatter
-from wiki_mcp.services import wiki_query
+from wiki_mcp.services import wiki_service as wiki_query
 from wiki_mcp.repositories.raw_store import IGNORED_NAMES
 from wiki_mcp.repositories.store import LOG_PATH, PATTERNS_DIR, FileWikiStore, WikiStore
 

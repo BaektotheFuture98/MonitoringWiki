@@ -30,6 +30,20 @@ def drop_field(frontmatter: list[str], field: str) -> list[str]:
     return kept
 
 
+def extract_section(markdown: str, heading: str) -> str:
+    """`## <heading>` 절의 본문(다음 `## ` 전까지)을 돌려준다. 절이 없거나 비어 있으면 ValueError."""
+    lines = markdown.split("\n")
+    target = f"## {heading}"
+    start = next((i for i, line in enumerate(lines) if line.strip() == target), None)
+    if start is None:
+        raise ValueError(f"'{target}' 절이 없습니다.")
+    end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("## ")), len(lines))
+    body = "\n".join(lines[start + 1:end]).strip()
+    if not body:
+        raise ValueError(f"'{target}' 절이 비어 있습니다.")
+    return body
+
+
 def split_sections(body: Sequence[str]) -> tuple[list[str], Sections]:
     head: list[str] = []
     sections: Sections = []

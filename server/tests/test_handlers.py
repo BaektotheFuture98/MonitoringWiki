@@ -7,7 +7,7 @@ from plans import FakePlanGenerator, create_item, plan_dict
 from wiki_mcp.app import build_services
 from wiki_mcp.core.auth import AuthError, ScopeError
 from wiki_mcp.core.errors import JobNotRetryable
-from wiki_mcp.services.handlers import (
+from wiki_mcp.services.compile_service import (
     handle_get_index,
     handle_get_infra,
     handle_get_job,

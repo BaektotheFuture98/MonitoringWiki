@@ -9,13 +9,34 @@ import json
 from anyio import to_thread
 from mcp.server.fastmcp import Context, FastMCP
 
-from wiki_mcp.services.handlers import (
+from wiki_mcp.repositories.store import WikiStore
+from wiki_mcp.services.compile_service import (
     Services,
     handle_get_index,
     handle_get_infra,
     handle_get_pattern,
     handle_submit_report,
 )
+
+GUIDE_MD_PATH = "docs/mcp-agent-guide.md"
+
+
+class InstructionsError(Exception):
+    """가이드 파일을 찾지 못했거나 비어 있음."""
+
+
+def load_instructions(store: WikiStore) -> str:
+    try:
+        text = store.read(GUIDE_MD_PATH)
+    except FileNotFoundError as exc:
+        raise InstructionsError(f"{GUIDE_MD_PATH}가 없습니다.") from exc
+    # 첫 번째 # 제목 줄은 MCP instructions에서 제외한다.
+    lines = text.split("\n")
+    start = next((i + 1 for i, line in enumerate(lines) if line.startswith("# ")), 0)
+    body = "\n".join(lines[start:]).strip()
+    if not body:
+        raise InstructionsError(f"{GUIDE_MD_PATH}가 비어 있습니다.")
+    return body
 
 GET_INDEX_DESCRIPTION = "장애 패턴 위키의 색인 전체를 반환합니다. 요약과 대표 시그니처 열을 보고 입력과 의미가 같은 패턴을 고르세요."
 GET_PATTERN_DESCRIPTION = "패턴 페이지를 반환합니다. sections로 원인, 증상, 해결방법, 관련 패턴 중 일부만 요청할 수 있습니다."

@@ -1,27 +1,40 @@
-"""승인된 보고서를 받아 raw 저장 → 마스킹 → LLM 계획 → 검증 → 위키 적용을 단일 워커로 처리한다."""
+"""승인된 보고서를 받아 raw 저장 → 마스킹 → LLM 계획 → 검증 → 위키 적용을 단일 워커로 처리한다.
+
+MCP·REST 요청 처리기(Services 컨테이너, handle_* 함수)도 여기에 있다.
+"""
 from __future__ import annotations
 
 import queue
 import threading
 import time
 import uuid
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable
+from typing import Any, Callable, TypeVar
 
-from wiki_mcp.services.llm import PlanGenerator
-from wiki_mcp.core.errors import JobNotRetryable
+from wiki_mcp.core.auth import TokenEntry, TokenStore, require_scope
+from wiki_mcp.core.config import Settings
+from wiki_mcp.core.errors import JobNotFound, JobNotRetryable
 from wiki_mcp.core.masking import Masker
 from wiki_mcp.core.plan import CompilePlan, PlanError, parse_plan
+from wiki_mcp.core.ratelimit import RateLimiter
 from wiki_mcp.repositories.job_store import Job, JobStore
 from wiki_mcp.repositories.raw_store import DUPLICATE_MESSAGE, RawStore
 from wiki_mcp.repositories.store import WikiStore
-from wiki_mcp.services import wiki_query
-from wiki_mcp.core.wiki_pages import index_pattern_ids
-from wiki_mcp.services.wiki_writer import WikiWriter
+from wiki_mcp.services.llm import PlanGenerator
+from wiki_mcp.services.wiki_service import (
+    WikiWriter,
+    index_pattern_ids,
+    read_index,
+    read_infra,
+    read_pattern,
+)
 
 PLAN_ATTEMPTS = 2
 RESTART_ERROR = "서버가 재시작되어 작업이 중단되었습니다. retry로 다시 처리하세요."
 STOP_TIMEOUT_SECONDS = 5.0
+
+T = TypeVar("T")
 
 
 class CompileTimeout(TimeoutError):
@@ -158,7 +171,7 @@ class CompileService:
         deadline = self._clock() + self.timeout
         text = self.raw_store.read(job.raw_path)
         masked = self.masker.mask(text)
-        index_text = wiki_query.read_index(self.wiki)
+        index_text = read_index(self.wiki)
         plan = self._plan(masked, index_text, deadline)
         self._check_deadline(deadline)
         applied = self.writer.apply_plan(plan, raw_path=job.raw_path, job_id=job.id)
@@ -190,3 +203,58 @@ class CompileService:
 
     def _stamp(self) -> str:
         return self._now().isoformat(timespec="seconds")
+
+
+# ============================================================
+# 서비스 컨테이너·요청 처리기
+# ============================================================
+
+@dataclass
+class Services:
+    settings: Settings
+    tokens: TokenStore
+    wiki: WikiStore
+    compiler: CompileService
+    limiter: RateLimiter
+
+
+def _run(svc: Services, authorization: str | None, scope: str, action: Callable[[TokenEntry], T]) -> T:
+    entry = svc.tokens.authenticate(authorization)
+    require_scope(entry, scope)
+    return action(entry)
+
+
+def handle_get_index(svc: Services, authorization: str | None) -> str:
+    return _run(svc, authorization, "read", lambda entry: read_index(svc.wiki))
+
+
+def handle_get_pattern(
+    svc: Services,
+    authorization: str | None,
+    pattern_id: str,
+    sections: list[str] | None = None,
+) -> str:
+    return _run(svc, authorization, "read",
+                lambda entry: read_pattern(svc.wiki, pattern_id, sections))
+
+
+def handle_get_infra(svc: Services, authorization: str | None) -> str:
+    return _run(svc, authorization, "read", lambda entry: read_infra(svc.wiki))
+
+
+def handle_submit_report(svc: Services, authorization: str | None, text: str, *, wait: float) -> dict[str, Any]:
+    def action(entry: TokenEntry) -> dict[str, Any]:
+        svc.limiter.check(entry.name)
+        return svc.compiler.submit(text, token=entry.name, wait=wait)
+    return _run(svc, authorization, "submit", action)
+
+
+def handle_get_job(svc: Services, authorization: str | None, job_id: str) -> dict[str, Any]:
+    return _run(svc, authorization, "submit", lambda entry: svc.compiler.get(job_id))
+
+
+def handle_retry_job(svc: Services, authorization: str | None, job_id: str, *, wait: float) -> dict[str, Any]:
+    def action(entry: TokenEntry) -> dict[str, Any]:
+        svc.limiter.check(entry.name)
+        return svc.compiler.retry(job_id, token=entry.name, wait=wait)
+    return _run(svc, authorization, "submit", action)

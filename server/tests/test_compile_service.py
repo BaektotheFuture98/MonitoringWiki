@@ -17,7 +17,7 @@ from wiki_mcp.repositories.job_store import Job, JobStore
 from wiki_mcp.core.masking import Masker
 from wiki_mcp.repositories.raw_store import DUPLICATE_MESSAGE, RawStore
 from wiki_mcp.repositories.store import FileWikiStore
-from wiki_mcp.services.wiki_writer import WikiWriter
+from wiki_mcp.services.wiki_service import WikiWriter
 
 NOW = datetime(2026, 10, 15, 10, 0, tzinfo=ZoneInfo("Asia/Seoul"))
 REPORT = "승인된 보고서\nuser=kim@example.com host=10.0.0.1\n결론: 새 원인"

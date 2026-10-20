@@ -5,11 +5,11 @@ import pytest
 from plans import FakePlanGenerator, plan_dict
 
 from wiki_mcp.app import build_services
-from wiki_mcp.services.instructions import extract_guide
-from wiki_mcp.routers.mcp_adapter import ASK_PROMPT_NAME, build_ask_prompt, create_mcp
+from wiki_mcp.repositories.store import FileWikiStore
+from wiki_mcp.routers.mcp_adapter import ASK_PROMPT_NAME, build_ask_prompt, create_mcp, load_instructions
 
 
-GUIDE = extract_guide((Path(__file__).resolve().parents[2] / "AGENTS.md").read_text(encoding="utf-8"))
+GUIDE = load_instructions(FileWikiStore(Path(__file__).resolve().parents[2]))
 
 
 @pytest.fixture
