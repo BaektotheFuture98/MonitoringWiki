@@ -13,5 +13,11 @@ __pycache__/
 # 작업 기록과 스냅샷(WIKI_STATE_DIR 기본 위치)
 .state/
 
+# 위키 콘텐츠(운영 데이터). 원격 저장소에 올리지 않음
+wiki/
+
 # 비밀값(API 키). 키 이름만 담은 server/.env.example만 커밋
 .env
+
+# 서버 로그(요청 내용·개인정보 포함 가능)
+*.log
