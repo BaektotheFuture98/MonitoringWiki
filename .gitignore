@@ -1,5 +1,6 @@
 # 원문 보고서(개인정보 포함)는 git에 넣지 않음. 서버 디스크에 두고 별도 백업.
-raw/
+raw/*
+!raw/.gitkeep
 
 # Python
 server/.venv/
