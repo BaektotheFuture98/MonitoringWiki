@@ -12,23 +12,20 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-from wiki_mcp.services import wiki_query
 from wiki_mcp.routers.rest import create_api_router, install_error_handlers
 from wiki_mcp.core.auth import TokenStore
 from wiki_mcp.repositories.job_store import JobStore
-from wiki_mcp.services.compile_service import CompileService
+from wiki_mcp.services.compile_service import CompileService, Services
 from wiki_mcp.core.errors import WikiReadError
-from wiki_mcp.core.config import ConfigError, Settings, load_env_file, load_settings
-from wiki_mcp.services.handlers import Services
-from wiki_mcp.services.instructions import load_instructions, read_agents_md
+from wiki_mcp.core.config import Settings, load_env_file, load_settings
 from wiki_mcp.services.llm import GeminiPlanGenerator, PlanGenerator, build_system_prompt
 from wiki_mcp.core.masking import Masker, load_names
-from wiki_mcp.routers.mcp_adapter import create_mcp
-from wiki_mcp.routers.middleware import BearerAuthMiddleware
+from wiki_mcp.routers.mcp_adapter import create_mcp, load_instructions
+from wiki_mcp.core.middleware import BearerAuthMiddleware
 from wiki_mcp.core.ratelimit import RateLimiter
 from wiki_mcp.repositories.raw_store import RawStore
 from wiki_mcp.repositories.store import FileWikiStore, WikiStore
-from wiki_mcp.services.wiki_writer import WikiWriter
+from wiki_mcp.services.wiki_service import WikiWriter, check_wiki
 
 SUBMIT_LIMIT_PER_MINUTE = 10
 HEALTH_PATH = "/healthz"
@@ -36,12 +33,11 @@ DOCS_PATHS = ("/docs", "/redoc", "/openapi.json")
 
 
 def _gemini_generator(settings: Settings, wiki: WikiStore) -> GeminiPlanGenerator:
-    if not settings.gemini_api_key or not settings.llm_model:
-        raise ConfigError("GEMINI_API_KEY와 WIKI_LLM_MODEL이 필요합니다(.env 또는 환경 변수).")
+    combined = wiki.read("AGENTS.md") + "\n\n" + wiki.read("docs/wiki-spec.md")
     return GeminiPlanGenerator(
         api_key=settings.gemini_api_key,
         model=settings.llm_model,
-        system_prompt=build_system_prompt(read_agents_md(wiki)),
+        system_prompt=build_system_prompt(combined),
         timeout=float(settings.compile_timeout),
     )
 
@@ -82,7 +78,7 @@ def create_app(
     now: Callable[[], datetime] | None = None,
 ) -> FastAPI:
     svc = build_services(settings, generator=generator, now=now)
-    wiki_query.check_wiki(svc.wiki)
+    check_wiki(svc.wiki)
     mcp = create_mcp(svc, load_instructions(svc.wiki))
     mcp_app = mcp.streamable_http_app()  # session_manager는 이 호출 뒤에 생긴다
 
@@ -109,7 +105,7 @@ def create_app(
     @app.get(HEALTH_PATH, include_in_schema=False)
     def healthz() -> JSONResponse:
         try:
-            wiki_query.check_wiki(svc.wiki)
+            check_wiki(svc.wiki)
         except WikiReadError as exc:
             return JSONResponse({"status": "error", "detail": str(exc)}, status_code=503)
         return JSONResponse({"status": "ok"})

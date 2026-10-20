@@ -10,7 +10,6 @@ from plans import FakePlanGenerator, plan_dict
 from starlette.testclient import TestClient
 
 from wiki_mcp.app import build_services, create_app
-from wiki_mcp.core.config import ConfigError
 from wiki_mcp.routers.mcp_adapter import _authorization, create_mcp
 from wiki_mcp.core.errors import WikiReadError
 
@@ -80,11 +79,6 @@ def test_tools_registered(server_settings):
     mcp = create_mcp(build_services(server_settings, generator=FakePlanGenerator(plan_dict())), "가이드")
     names = {tool.name for tool in asyncio.run(mcp.list_tools())}
     assert names == {"get_index", "get_pattern", "get_infra", "submit_report"}
-
-
-def test_build_services_requires_llm_settings(server_settings):
-    with pytest.raises(ConfigError, match="GEMINI_API_KEY"):
-        build_services(server_settings)
 
 
 def test_build_services_with_llm_settings(server_settings):

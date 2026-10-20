@@ -82,7 +82,7 @@ class RawStore:
 
     def _find_duplicate(self, digest: str) -> str | None:
         for path in self.iter_raw_files():
-            existing = path.read_text(encoding="utf-8", errors="replace")
+            existing = path.read_text(encoding="utf-8")
             if content_hash(existing) == digest:
                 return self._relative(path)
         return None
