@@ -2,7 +2,8 @@ import json
 
 import pytest
 
-from wiki_mcp.core.auth import AuthError, ScopeError, TokenStore, hash_token, main, require_scope
+from wiki_mcp.core.auth import TokenStore, hash_token, main, require_scope
+from wiki_mcp.core.errors import AuthError, ScopeError
 
 
 def write_tokens(path, items):

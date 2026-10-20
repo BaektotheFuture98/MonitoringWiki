@@ -28,3 +28,15 @@ class ReportRejected(ValueError):
 
 class ReportTooLarge(ReportRejected):
     """보고서가 크기 상한을 넘음."""
+
+
+class AuthError(Exception):
+    """토큰이 없거나 유효하지 않음(HTTP 401)."""
+
+
+class ScopeError(Exception):
+    """토큰에 필요한 스코프가 없음(HTTP 403)."""
+
+
+class RateLimited(Exception):
+    """허용 횟수를 넘음."""

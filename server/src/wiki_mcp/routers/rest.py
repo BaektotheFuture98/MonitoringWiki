@@ -8,16 +8,17 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict
 
-from wiki_mcp.core.auth import AuthError, ScopeError
 from wiki_mcp.core.errors import (
+    AuthError,
     JobNotFound,
     JobNotRetryable,
+    RateLimited,
     ReportRejected,
     ReportTooLarge,
+    ScopeError,
     WikiReadError,
 )
-from wiki_mcp.core.ratelimit import RateLimited
-from wiki_mcp.services.handlers import (
+from wiki_mcp.services.compile_service import (
     Services,
     handle_get_infra,
     handle_get_job,

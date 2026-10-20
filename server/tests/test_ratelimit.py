@@ -1,6 +1,7 @@
 import pytest
 
-from wiki_mcp.core.ratelimit import RateLimited, RateLimiter
+from wiki_mcp.core.errors import RateLimited
+from wiki_mcp.core.ratelimit import RateLimiter
 
 
 class Clock:

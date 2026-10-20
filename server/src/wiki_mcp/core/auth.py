@@ -8,15 +8,9 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from wiki_mcp.core.errors import AuthError, ScopeError  # noqa: F401 — 외부 임포트 경로 유지
+
 VALID_SCOPES = frozenset({"read", "submit", "infra"})
-
-
-class AuthError(Exception):
-    """토큰이 없거나 유효하지 않음(HTTP 401)."""
-
-
-class ScopeError(Exception):
-    """토큰에 필요한 스코프가 없음(HTTP 403)."""
 
 
 @dataclass(frozen=True)

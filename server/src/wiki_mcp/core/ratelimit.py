@@ -6,9 +6,7 @@ import time
 from collections import defaultdict, deque
 from typing import Callable
 
-
-class RateLimited(Exception):
-    """허용 횟수를 넘음."""
+from wiki_mcp.core.errors import RateLimited  # noqa: F401 — 외부 임포트 경로 유지
 
 
 class RateLimiter:
