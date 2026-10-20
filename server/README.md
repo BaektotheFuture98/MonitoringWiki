@@ -3,11 +3,21 @@
 외부 에이전트는 MCP로 장애 패턴 위키를 조회하고, 외부 웹은 REST로 인프라 구성 조회와 보고서 제출·작업 조회·재시도를 합니다. 승인된 보고서가 들어오면 서버가 즉시 마스킹 → LLM 컴파일 계획 → 검증 → 위키 등록까지 처리합니다. PoC이므로 git 없이 파일을 직접 읽고 씁니다. 설계: `docs/superpowers/specs/2026-10-15-poc-auto-compile-api-design.md`
 
 ## 설치
+
+Python 3.11 이상이 필요합니다.
+
 ```bash
 cd server
 python -m venv .venv
-source .venv/bin/activate        # Windows Git Bash: source .venv/Scripts/activate
-pip install -e .
+
+# macOS/Linux
+source .venv/bin/activate
+# Windows PowerShell
+# .venv\Scripts\Activate.ps1
+# Windows Git Bash
+# source .venv/Scripts/activate
+
+pip install -e ".[dev]"   # dev 포함 시 pytest·httpx도 설치됨
 ```
 
 ## 설정
